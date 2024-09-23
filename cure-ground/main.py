@@ -3,6 +3,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import cv2
+import cli
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -33,4 +34,4 @@ def main():
     sys.exit(app.exec())
 
 if __name__ == '__main__':
-    main()
+    cli.main()
