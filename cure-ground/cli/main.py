@@ -10,7 +10,6 @@ print("cwd: ", os.getcwd())
 
 from protocols.commands import commands_v01
 
-
 def CURE_ping(ser, timeout=10):
     # Create a 4 byte packet
     # '<' 0x01 0x00 '>'
