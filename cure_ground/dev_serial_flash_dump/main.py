@@ -6,6 +6,8 @@ import pandas as pd
 from enum import Enum
 from tqdm import tqdm 
 
+# For visulazing binary data as text
+import binascii
 
 class DataNames(Enum):
     ACCELEROMETER_X = 0
@@ -23,6 +25,8 @@ class DataNames(Enum):
     MEDIAN_ACCELERATION_SQUARED = 12
     AVERAGE_CYCLE_RATE = 13
     TIMESTAMP = 14
+    STATE_CHANGE = 15
+    FLIGHT_ID = 16
 
     def __str__(self):
         return self.name.lower()
@@ -36,20 +40,51 @@ Dump spec WIP
 
 """
 
-def main(port, stat_only):
+def read_all(ser):
+    print("Reading from serial...")
+    pages = []
+    i = 0
+    # Read 255 + 3 bytes per page
+    while True:
+        i += 1
+        # time.sleep(1)
+        chunk = ser.read(255 + 3)
+        # print("Chunk: ", chunk)
+        if chunk[:3] == b"lsh":
+            # print("LSH")
+            pages.append(chunk[3:])
+        elif b'EOF' in chunk:
+            print("\nEOF: ", chunk)
+            break
+        else:
+            print("\nInvalid chunk: ", chunk)
+            break
+        if i % 16 == 0:
+            print("Read: ", len(pages), "pages", end='\r')
+
+        # Send the 'n' to get the next page
+        ser.write(b'n')
+    print("\nREAD ALL DONE")
+    return pages
+
+def main(port, stat_only, all_data):
     # 1. Establish connection
     ser = serial.Serial(port, 115200)
 
     # 1.4 clear the buffer
-    print("Clearing: ", ser.read(ser.in_waiting))
+    time.sleep(.1)
+    while ser.in_waiting:
+        print("Clearing: ", len(ser.read(ser.in_waiting)), "bytes")
+        ser.read(ser.in_waiting)
+        time.sleep(.1)
 
     # 1.5 print out the status first
     ser.write(b'status\n')
     time.sleep(.2)
     print("Status: ")
     read = ser.read(ser.in_waiting)
-    print(read)
     print(read.decode('utf-8'))
+    
 
     if stat_only:
         return
@@ -59,11 +94,15 @@ def main(port, stat_only):
     # Clear the incoming buffer
     while ser.in_waiting:
         print("Clearing: ", ser.read(ser.in_waiting))
-    ser.write(b'dump\n')
+
+    if all_data:
+        ser.write(b'dump -a\n')
+    else:
+        ser.write(b'dump\n')
 
 
     # 2.5 Read until we eat a \n, \r, and 's' char for alginment in that order
-    a_queue = ['a', 'b', 'c']
+    a_queue = ['a', 'b', 'c', 'd', 'e', 'f']
     
     while True:
         try:
@@ -72,10 +111,10 @@ def main(port, stat_only):
             print("Can't decode: ", data)
         if data == a_queue[0]:
             a_queue.pop(0)
-            print("Popped: ", data)
+            # print("Popped: ", data)
         else:
-            a_queue = ['a', 'b', 'c']
-            print("Failed to pop: ", data)
+            a_queue = ['a', 'b', 'c', 'd', 'e', 'f']
+            # print("Failed to pop: ", data)
 
         if not a_queue:
             break
@@ -85,53 +124,62 @@ def main(port, stat_only):
 
 
     # 3. Receive the data
-    i = 0
+    all_pages = read_all(ser)
+    
+    # 3.5 Parse the data
     data_stream = []
-    start_time = time.time()
-    while time.time() - start_time < 10:
-        # Read 6 bytes
-        data = ser.read(5)
-        name = data[0]
-        # print(f"{i} Name: ", name, end=' ')
 
-        # if name not in [d.value for d in DataNames]:
-        #     print("Invalid name: ", name)
-        #     break
+    print("Number of pages: ", len(all_pages))
 
-        if name == 255:
-            print("End of data")
-            break
+    for page in all_pages:
+        for i in range(0, len(page), 5):
+            # print("i: ", i, "page len: ", len(page))
+            name = page[i]
+            value = page[i+1:i+5]
+            # print(len(value))
+            if name == 14:
+                value = struct.unpack('<I', value)[0]
+            else:
+                value = struct.unpack('<f', value)[0]
+            data_stream.append((name, value))
 
-        if name == 14:  #uint32_t
-            value = struct.unpack('<I', data[1:5])[0]
-            # print("Value: ", value)
-        else:  # float
-            value = struct.unpack('<f', data[1:5])[0]
-            # print("Value: ", value)
-        
-        data_stream.append((name, value))
 
-        i += 1
 
+    print()
     print("Processing")
 
     # 4. For each timestamp that is encountered, create a new row in the CSV file
-    df = pd.DataFrame(columns=[str(d) for d in DataNames])
+    rows = []
     building_row = {}
     for d in tqdm(data_stream):
-        if d[0] == 14:
-            if building_row:
-                # print("reset")
-                df = pd.concat([df, pd.DataFrame(building_row, index=[0])], ignore_index=True)
+        if d[0] == DataNames.TIMESTAMP.value:
+            # Time to start a new row.
+            if building_row:  # Only add non-empty rows.
+                rows.append(building_row)
             building_row = {}
-        
-        # print("Adding: ", DataNames(d[0]).name.lower(), d[1])
-        building_row[DataNames(d[0]).name.lower()] = d[1]
+        try:
+            # Use the enum's name (or however you want to map it)
+            key = DataNames(d[0]).name.lower()
+            building_row[key] = d[1]
+        except ValueError:
+            print("Invalid name: ", d[0])
+            # Optionally, break or continue
+
+    # Add the final row if it exists.
+    if building_row:
+        rows.append(building_row)
+
+    expected_columns = [str(d) for d in DataNames]
+    df = pd.DataFrame(rows, columns=expected_columns)
+
 
     # 5. Save the data to a CSV file
     df.to_csv('data.csv', index=False)
 
     print("Wrote", len(df), "rows to data.csv")
+    print("Latest timestamp: ", df['timestamp'].iloc[-1])
+    print("Greatest timestamp: ", df['timestamp'].max())
+    print("Smallest timestamp: ", df['timestamp'].min())
 
 
 if __name__ == '__main__':
@@ -140,5 +188,6 @@ if __name__ == '__main__':
     parser.add_argument('port', help='The serial port to connect to')
     # Stat only
     parser.add_argument('--stat', action='store_true', help='Print the status of the device only')
+    parser.add_argument('-a', '--all', action='store_true', help='Dump all the data, ignoring empty pages')
     args = parser.parse_args()
-    main(args.port, args.stat)
+    main(args.port, args.stat, args.all)
