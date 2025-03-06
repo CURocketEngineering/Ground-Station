@@ -1,0 +1,3 @@
+"""
+Immutable protocols package initialization
+"""
