@@ -5,6 +5,7 @@ import time
 import pandas as pd
 from enum import Enum
 from tqdm import tqdm 
+import datetime 
 
 # For visulazing binary data as text
 import binascii
@@ -173,10 +174,12 @@ def main(port, stat_only, all_data):
     df = pd.DataFrame(rows, columns=expected_columns)
 
 
+    # Data name
+    data_name = "flight_data_" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + ".csv"
     # 5. Save the data to a CSV file
-    df.to_csv('data.csv', index=False)
+    df.to_csv(data_name, index=False)
 
-    print("Wrote", len(df), "rows to data.csv")
+    print("Wrote", len(df), "rows to", data_name)
     print("Latest timestamp: ", df['timestamp'].iloc[-1])
     print("Greatest timestamp: ", df['timestamp'].max())
     print("Smallest timestamp: ", df['timestamp'].min())
