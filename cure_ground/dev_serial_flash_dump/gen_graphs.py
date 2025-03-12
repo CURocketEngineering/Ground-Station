@@ -7,6 +7,14 @@ def main(path_to_csv):
     df = pd.read_csv(path_to_csv)
     save_path = path_to_csv.split('.')[0]+'/graphs'
     os.makedirs(save_path, exist_ok=True)
+
+    # Remove rows with a timestamp greater than 10 days
+    largest_possible_timestamp = 10*24*60*60*1000
+    df = df[df['timestamp'] < largest_possible_timestamp]
+
+    # Keep only hour > 10
+    smallest_possible_timestamp = 10*60*60*1000
+    df = df[df['timestamp'] > smallest_possible_timestamp]
     
     # Graph every column against timestamp on separate graphs and save all to a folder
     for col in df.columns:
@@ -21,6 +29,11 @@ def main(path_to_csv):
         plt.ylabel(col)
         plt.savefig(f'{save_path}/{col}.png')
         plt.close()
+
+
+
+
+    print("largest timestamp: ", df['timestamp'].max())
 
     # Graph all the accelerometer data on the same graph
     plt.plot(df['timestamp'], df['accelerometer_x'], label='accelerometer_x')
