@@ -183,6 +183,8 @@ def main(port, stat_only, all_data):
     print("Latest timestamp: ", df['timestamp'].iloc[-1])
     print("Greatest timestamp: ", df['timestamp'].max())
     print("Smallest timestamp: ", df['timestamp'].min())
+    print("Number of unique flight ids: ", df['flight_id'].nunique())
+    print("Unique flight ids: ", df['flight_id'].unique())
 
 
 if __name__ == '__main__':
