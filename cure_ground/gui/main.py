@@ -3,6 +3,9 @@ from PyQt6.QtWidgets import QMainWindow, QApplication, QLabel, QPushButton, QVBo
 from PyQt6.QtGui import QPixmap, QPalette, QBrush, QFont, QFontDatabase
 from PyQt6.QtCore import Qt
 
+from get_status import get_status
+
+
 class MyWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -21,14 +24,12 @@ class MyWindow(QMainWindow):
         # Add overlay image
         self.add_overlay_image("dashboardImages/BlackScreen.png")
         
-        # Load custom font
         self.font_family = self.load_custom_font("NbpInformaFivesix-2dXW.ttf")  # Replace with your TTF file path
         
         # Create text display area (initially hidden)
-        self.left_column = self.add_custom_text("", self.font_family, 20, "#C5FFBF", 375, 51)
-        self.right_column = self.add_custom_text("", self.font_family, 20, "#C5FFBF", 950, 51)
+        self.left_column = self.add_custom_text("", self.font_family, 25, "#C5FFBF", 375, 51)
+        self.right_column = self.add_custom_text("", self.font_family, 25, "#C5FFBF", 950, 51)
         
-        # Initially hide both columns
         self.left_column.hide()
         self.right_column.hide()
         
@@ -66,29 +67,24 @@ class MyWindow(QMainWindow):
         """Load a custom TTF font file and return its font family name"""
         font_id = QFontDatabase.addApplicationFont(font_path)
         if font_id != -1:
-            # Get the font family name from the loaded font
             font_family = QFontDatabase.applicationFontFamilies(font_id)[0]
             return font_family
         else:
             print(f"Error: Could not load font from {font_path}")
-            return "Arial"  # Fallback to a system font if loading fails
+            return "Arial"
     
     def add_custom_text(self, text, font_family, font_size, color, x, y):
         # Create a label for the text
         text_label = QLabel(self)
         text_label.setText(text)
         
-        # Set font properties
         font = QFont(font_family, font_size)
         text_label.setFont(font)
         
-        # Set text color and background
         text_label.setStyleSheet(f"color: {color}; background-color: transparent; padding: 10px;")
         
-        # Enable text wrapping
         text_label.setWordWrap(True)
         
-        # Position the text
         text_label.move(x, y)
         
         # Ensure text is visible above all other elements
@@ -101,71 +97,58 @@ class MyWindow(QMainWindow):
         sidebar = QWidget(self)
         sidebar.setGeometry(75, 80, 250, 700)
         sidebar.setStyleSheet("background-color: rgba(10, 10, 10, 150); border-radius: 10px;")
-        
+
         # Create layout for buttons
         layout = QVBoxLayout(sidebar)
         layout.setSpacing(10)
         layout.setContentsMargins(10, 20, 10, 20)
-        
-        # Define button sections from the data
-        sections = {
-            "Status": self.get_all_text()
-        }
-        
-        # Create buttons for each section
-        for section_name, section_text in sections.items():
-            button = QPushButton(section_name)
 
-            font = QFont(self.font_family, 20)
-            button.setFont(font)
-
-            button.setStyleSheet("""
-                QPushButton {
-                    background-color: #2a3a4a;
-                    color: white;
-                    border: none;
-                    border-radius: 5px;
-                    padding: 10px;
-                    font-weight: bold;
-                }
-                QPushButton:hover {
-                    background-color: #3a4a5a;
-                }
-                QPushButton:pressed {
-                    background-color: #4a5a6a;
-                }
-            """)
-            
-            # Connect the button click to show the corresponding text
-            # We need to use a lambda with a default argument to capture the current value
-            button.clicked.connect(lambda checked=False, text=section_text: self.show_text(text))
-            
-            layout.addWidget(button)  # Changed from addButton to addWidget
+        # Create button to fetch and display status
+        button = QPushButton("Status")
         
+        font = QFont(self.font_family, 20)
+        button.setFont(font)
+
+        button.setStyleSheet("""
+            QPushButton {
+                background-color: #2a3a4a;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                padding: 10px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #3a4a5a;
+            }
+            QPushButton:pressed {
+                background-color: #4a5a6a;
+            }
+        """)
+
+        # Correctly connect button to show_text()
+        button.clicked.connect(self.show_text)
+
+        layout.addWidget(button)
+
         # Add a stretch at the end to push all buttons to the top
         layout.addStretch()
-        
+
         # Ensure sidebar is visible above overlay
         sidebar.raise_()
+
+
     
-    def show_text(self, text):
-        # Separate sections
-        launch_predictor = self.get_launch_predictor_text()
-        apogee_detector = self.get_apogee_detector_text()
-        data_saver = self.get_data_saver_text()
-        flash = self.get_flash_text()
-        sensors = self.get_sensors_text()
+    def show_text(self):
+        status_data = get_status("COM4")
         
-        # First column contains all sections except sensors
-        left_text = (launch_predictor + "\n\n" + 
-                    apogee_detector + "\n\n" + 
-                    data_saver + "\n\n" + 
-                    flash)
+        left_text = (self.get_launch_predictor_text(status_data) + "\n\n" +
+                    self.get_apogee_detector_text(status_data) + "\n\n" +
+                    self.get_data_saver_text(status_data) + "\n\n" +
+                    self.get_flash_text(status_data))
         
-        # Second column contains only sensors data
-        right_text = sensors
+        right_text = self.get_sensors_text(status_data)
         
-        # Set text in two columns
         self.left_column.setText(left_text)
         self.right_column.setText(right_text)
         
@@ -175,61 +158,54 @@ class MyWindow(QMainWindow):
         self.left_column.show()
         self.right_column.show()
     
-    # Methods to format the different text sections
-    def get_launch_predictor_text(self):
-        return """--Launch Predictor--
-Launched: [value]
-Launched Time: [value]
-Median Acceleration Squared: [value]"""
+    def get_launch_predictor_text(self, status_data):
+        return f"""--Launch Predictor--
+Launched: {status_data.get('launchPredictorLaunched', 'N/A')}
+Launched Time: {status_data.get('launchPredictorLaunchedTime', 'N/A')}
+Median Acceleration Squared: {status_data.get('launchPredictorMedianAccelerationSquared', 'N/A')}"""
+
     
-    def get_apogee_detector_text(self):
-        return """--Apogee Detector--
-Apogee Detected: [value]
-Estimated Altitude: [value]
-Estimated Velocity: [value]
-Inertial Vertical Acceleration: [value]
-Vertical Axis: [value]
-Vertical Direction: [value]
-Apogee Altitude: [value]"""
+    def get_apogee_detector_text(self, status_data):
+        return f"""--Apogee Detector--
+Apogee Detected: {status_data.get('apogeeDetected', 'N/A')}
+Estimated Altitude: {status_data.get('estimatedAltitude', 'N/A')}
+Estimated Velocity: {status_data.get('estimatedVelocity', 'N/A')}
+Inertial Vertical Acceleration: {status_data.get('inertialVerticalAcceleration', 'N/A')}
+Vertical Axis: {status_data.get('verticalAxis', 'N/A')}
+Vertical Direction: {status_data.get('verticalDirection', 'N/A')}
+Apogee Altitude: {status_data.get('apogeeAltitude', 'N/A')}"""
+
+    def get_data_saver_text(self, status_data):
+        return f"""--Data Saver--
+Post Launch Mode: {status_data.get('postLaunchMode', 'N/A')}
+Rebooted in Post Launch Mode (won't save): {status_data.get('rebootedInPostLaunchMode', 'N/A')}
+Last Timestamp: {status_data.get('lastTimestamp', 'N/A')}
+Last Data Point Value: {status_data.get('lastDataPointValue', 'N/A')}
+Super Loop Average Hz: {status_data.get('superLoopAverageHz', 'N/A')}"""
+
+    def get_flash_text(self, status_data):
+        return f"""--Flash--
+Stopped writing b/c wrapped around to launch address: {status_data.get('chipFullDueToPostLaunchProtection', 'N/A')}
+Launch Write Address: {status_data.get('launchWriteAddress', 'N/A')}
+Next Write Address: {status_data.get('nextWriteAddress', 'N/A')}
+Buffer Index: {status_data.get('bufferIndex', 'N/A')}
+Buffer Flushes: {status_data.get('bufferFlushes', 'N/A')}"""
     
-    def get_data_saver_text(self):
-        return """--Data Saver--
-Post Launch Mode: [value]
-Rebooted in Post Launch Mode (won't save): [value]
-Last Timestamp: [value]
-Last Data Point Value: [value]
-Super loop average hz: [value]"""
-    
-    def get_flash_text(self):
-        return """--Flash--
-Stopped writing b/c wrapped around to launch address: [value]
-Launch Write Address: [value]
-Next Write Address: [value]
-Buffer Index: [value]
-Buffer Flushes: [value]"""
-    
-    def get_sensors_text(self):
-        return """--Sensors--
-Accelerometer X: [value]
-Accelerometer Y: [value]
-Accelerometer Z: [value]
-Gyroscope X: [value]
-Gyroscope Y: [value]
-Gyroscope Z: [value]
-Temperature: [value]
-Pressure: [value]
-Altitude: [value]
-Magnetometer X: [value]
-Magnetometer Y: [value]
-Magnetometer Z: [value]"""
-    
-    def get_all_text(self):
-        # Combine all sections
-        return (self.get_launch_predictor_text() + "\n\n" + 
-                self.get_apogee_detector_text() + "\n\n" + 
-                self.get_data_saver_text() + "\n\n" + 
-                self.get_flash_text() + "\n\n" + 
-                self.get_sensors_text())
+    def get_sensors_text(self, status_data):
+        return f"""--Sensors--
+Accelerometer X: {status_data.get('aclx', 'N/A')}
+Accelerometer Y: {status_data.get('acly', 'N/A')}
+Accelerometer Z: {status_data.get('aclz', 'N/A')}
+Gyroscope X: {status_data.get('gyrox', 'N/A')}
+Gyroscope Y: {status_data.get('gyroy', 'N/A')}
+Gyroscope Z: {status_data.get('gyroz', 'N/A')}
+Temperature: {status_data.get('temp', 'N/A')}
+Pressure: {status_data.get('pressure', 'N/A')}
+Altitude: {status_data.get('alt', 'N/A')}
+Magnetometer X: {status_data.get('magx', 'N/A')}
+Magnetometer Y: {status_data.get('magy', 'N/A')}
+Magnetometer Z: {status_data.get('magz', 'N/A')}"""
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
