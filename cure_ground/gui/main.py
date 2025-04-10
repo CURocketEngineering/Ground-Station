@@ -2,12 +2,12 @@ import sys
 import serial.tools.list_ports  # To list available COM ports
 from PyQt6.QtWidgets import (
     QMainWindow, QApplication, QLabel, QPushButton, QVBoxLayout,
-    QWidget, QComboBox
+    QWidget, QComboBox, QMessageBox 
 )
 from PyQt6.QtGui import QPixmap, QPalette, QBrush, QFont, QFontDatabase
 from PyQt6.QtCore import Qt, QTimer
 
-from get_status import get_status
+from get_status import get_status, clear_post_launch_mode
 
 
 class MyWindow(QMainWindow):
@@ -149,17 +149,17 @@ class MyWindow(QMainWindow):
         status_button.setStyleSheet(refresh_button.styleSheet())  
 
         status_button.clicked.connect(self.show_text)  # Show status info
-        status_button.clicked.connect(self.show_floating_button)  # Show floating button
+        status_button.clicked.connect(self.show_buttons)  # Show floating button
         layout.addWidget(status_button)
 
         layout.addStretch()  
         sidebar.raise_()
 
-        # Create Floating Button (initially hidden)
-        self.floating_button = QPushButton("Live Update", self)
-        self.floating_button.setFont(QFont(self.font_family, 20))
-        self.floating_button.setGeometry (1260, 750, 200, 50)  # Position it
-        self.floating_button.setStyleSheet("""
+        # Create live updating button (initially hidden)
+        self.update_button = QPushButton("Live Update", self)
+        self.update_button.setFont(QFont(self.font_family, 20))
+        self.update_button.setGeometry (1260, 750, 200, 50)  # Position it
+        self.update_button.setStyleSheet("""
             QPushButton {
                 background-color: #2a3a4a;
                 color: white;
@@ -175,16 +175,39 @@ class MyWindow(QMainWindow):
                 background-color: #4a5a6a;
             }
         """)
-        self.floating_button.hide()  # Hide it initially
-        self.floating_button.clicked.connect(self.toggle_streaming)
+        self.update_button.hide()  # Hide it initially
+        self.update_button.clicked.connect(self.toggle_streaming)
 
-    def show_floating_button(self):
-        """Show the floating button when Status is pressed"""
-        self.floating_button.show()
+        # Create button to clear plm (hidden initially)
+        self.clear = QPushButton("Clear PLM", self)
+        self.clear.setFont(QFont(self.font_family, 20))
+        self.clear.setGeometry (1260, 690, 200, 50)  # Position it
+        self.clear.setStyleSheet("""
+            QPushButton {
+                background-color: #2a3a4a;
+                color: white;
+                border: none;
+                border-radius: 10px;
+                padding: 10px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #3a4a5a;
+            }
+            QPushButton:pressed {
+                background-color: #4a5a6a;
+            }
+        """)
+        self.clear.hide()  # Hide it initially
+        self.clear.clicked.connect(self.clear_plm)
+
+    def show_buttons(self):
+        self.update_button.show()
         self.streaming = False  # Reset streaming state
 
+        self.clear.show()
+
     def refresh_ports(self):
-        """Scan for available serial ports and update the dropdown menu"""
         self.port_dropdown.clear()
         ports = serial.tools.list_ports.comports()
         port_names = [port.device for port in ports]
@@ -194,15 +217,21 @@ class MyWindow(QMainWindow):
             self.port_dropdown.addItem("No Ports Available")
 
     def toggle_streaming(self):
-        """Start or stop continuous streaming of data"""
         if self.streaming:
             self.timer.stop()
-            self.floating_button.setText("Start Updating")  # Update button text
+            self.update_button.setText("Start Updating")
         else:
             self.timer.start(1000)  # 1000 ms = 1 second
-            self.floating_button.setText("Stop Updating")
+            self.update_button.setText("Stop Updating")
     
         self.streaming = not self.streaming  # Toggle the state
+        0
+
+    def clear_plm(self):
+        selected_port = self.port_dropdown.currentText()
+        if selected_port != "No Ports Available":
+            clear_post_launch_mode(selected_port)
+            QMessageBox.information(self, "", "Please reboot the board", QMessageBox.StandardButton.Ok)
 
     def show_text(self):
         selected_port = self.port_dropdown.currentText()
@@ -262,6 +291,14 @@ Buffer Flushes: {status_data.get('bufferFlushes', 'N/A')}"""
     def get_sensors_text(self, status_data):
         return f"""--Sensors--
 Accelerometer X: {status_data.get('aclx', 'N/A')}
+Accelerometer Y: {status_data.get('acly', 'N/A')}
+Accelerometer Z: {status_data.get('aclz', 'N/A')}
+Gyroscope X: {status_data.get('gyrox', 'N/A')}
+Gyroscope Y: {status_data.get('gyroy', 'N/A')}
+Gyroscope Z: {status_data.get('gyroz', 'N/A')}
+Magnetometer X: {status_data.get('magx', 'N/A')}
+Magnetometer Y: {status_data.get('magy', 'N/A')}
+Magnetometer Z: {status_data.get('magz', 'N/A')}
 Temperature: {status_data.get('temp', 'N/A')}
 Pressure: {status_data.get('pressure', 'N/A')}
 Altitude: {status_data.get('alt', 'N/A')}"""

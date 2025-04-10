@@ -6,7 +6,11 @@ from typing import Dict
 
 def get_status(port) -> Dict[str, str]:
     # 1. Establish connection
-    ser = serial.Serial(port, 115200)
+    try:
+        ser = serial.Serial(port, 115200)
+    except Exception as e:
+        print(f"Error opening serial port: {e}")
+        return {}
 
     # 1.4 Clear the buffer
     time.sleep(0.1)
@@ -36,6 +40,26 @@ def get_status(port) -> Dict[str, str]:
         status[tag] = value.strip()
 
     return status
+
+
+def clear_post_launch_mode(port) -> bool:
+    """Send command to clear post-launch mode"""
+    try:
+        ser = serial.Serial(port, 115200, timeout=1)
+        time.sleep(0.1)  # Wait for connection
+        
+        # Send the clear command
+        ser.write(b'clear_plm\n')
+        time.sleep(0.2)  # Wait for response
+        
+        # Read acknowledgment (optional)
+        response = ser.read(ser.in_waiting).decode('utf-8').strip()
+        ser.close()
+        
+        return True  # Assume success unless exception occurs
+    except Exception as e:
+        print(f"Error clearing post-launch mode: {e}")
+        return False
 
 
 if __name__ == "__main__":
