@@ -35,32 +35,32 @@ def plot_flight_data(csv_path: str, save_path: str, data_names_version: int, sta
     os.makedirs(save_path, exist_ok=True)
 
     # 2. Identify the column name for "STATE_CHANGE" and numeric code for "STATE_ASCENT"
-    state_col = data_names.STATE_CHANGE.column_name
+    state_col = data_names.STATE_CHANGE.name
     launch_state_value = states.STATE_ASCENT.value
 
     # 3. Determine launch time (ms)
-    launch_time_ms = get_launch_time(df, state_col, launch_state_value)
+    launch_time_ms = get_launch_time(df, state_col, launch_state_value, data_names)
 
     # 4. Shift timestamps to seconds from launch
-    df = shift_timestamp_to_launch(df, launch_time_ms)
+    df = shift_timestamp_to_launch(df, launch_time_ms, data_names)
 
     # 5. Sort by timestamp and set as index
-    df.sort_values('timestamp', inplace=True)
-    df.set_index('timestamp', inplace=True)
+    df.sort_values(data_names.TIMESTAMP.name, inplace=True)
+    df.set_index(data_names.TIMESTAMP.name, inplace=True)
 
     # 6. Create a slice of the data from -2s to +40s for the "launch window"
     launch_df = create_slice_for_launch_window(df, start=-2, end=40)
 
     # 7. Gather valid columns from data definitions
-    valid_columns = set(d['name'].lower() for d in data_names.data_definitions)
-    units = {d['name'].lower(): d['unit'] for d in data_names.data_definitions}
+    valid_columns = set(d['name'] for d in data_names.data_definitions)
+    units = {d['name']: d['unit'] for d in data_names.data_definitions}
 
     # 8. Plot each valid column (full data + launch window)
     if not just_summary:
         iterator = tqdm(df.columns, desc="Plotting columns", unit="column")
         for column in iterator:
             iterator.set_postfix(column=column)
-            if column not in valid_columns or column == 'timestamp':
+            if column not in valid_columns or column == data_names.TIMESTAMP.name:
                 continue
             plot_column_full_and_launch_window(df, launch_df, column, units, save_path)
 
@@ -69,13 +69,13 @@ def plot_flight_data(csv_path: str, save_path: str, data_names_version: int, sta
     plot_summary_figure(launch_df, states, units, save_path, key_state_event_labels={
         states.STATE_ASCENT.value: "Launch Detect",
         states.STATE_DESCENT.value: "Apogee Detect",
-    })
+    }, data_names=data_names)
 
 
 # Example usage
 if __name__ == "__main__":
     plot_flight_data(
-        csv_path="../MARTHA_3-8_1.3_B1.csv",
+        csv_path="../MARTHA_3-8_1.3_B.csv",
         save_path="3-8_B1_Plots",
         data_names_version=1,
         states_version=1,

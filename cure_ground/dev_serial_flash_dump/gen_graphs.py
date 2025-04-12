@@ -79,6 +79,9 @@ def main(path_to_csv, first_id, ten_sec_launch):
     plt.plot(df['timestamp_s'], df['accelerometer_y'], label='accelerometer_y')
     plt.plot(df['timestamp_s'], df['accelerometer_z'], label='accelerometer_z')
 
+    # Plot predicted apogee alittude
+    plt.plot(df['timestamp_s'], df['est_apogee'], label='predicted_apogee (m)')
+
     # Verticle line at launch time and apogee time
     plt.axvline(x=0, color='r', linestyle='--', label='launch')
     plt.axvline(x=apogee_time, color='g', linestyle='--', label='apogee')

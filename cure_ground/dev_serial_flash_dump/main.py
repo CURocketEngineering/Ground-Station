@@ -28,6 +28,10 @@ class DataNames(Enum):
     TIMESTAMP = 14
     STATE_CHANGE = 15
     FLIGHT_ID = 16
+    EST_APOGEE = 17
+    EST_VERTICAL_VELOCITY = 18
+    EST_ALTITUDE = 19
+    BATTERY_VOLTAGE = 20
 
     def __str__(self):
         return self.name.lower()

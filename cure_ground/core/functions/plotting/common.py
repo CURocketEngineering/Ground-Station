@@ -10,7 +10,7 @@ def load_csv(csv_path: str) -> pd.DataFrame:
     return pd.read_csv(csv_path)
 
 
-def get_launch_time(df: pd.DataFrame, state_column_name: str, launch_state: int) -> float:
+def get_launch_time(df: pd.DataFrame, state_column_name: str, launch_state: int, data_names) -> float:
     """
     Returns the timestamp (ms) of when launch occurs by 
     looking for the first row where state_column_name == launch_state,
@@ -19,13 +19,13 @@ def get_launch_time(df: pd.DataFrame, state_column_name: str, launch_state: int)
     Raises:
         ValueError: If no row in df has the specified state_column_name == launch_state.
     """
-    launch_rows = df.loc[df[state_column_name] == launch_state, 'timestamp']
+    launch_rows = df.loc[df[state_column_name] == launch_state, data_names.TIMESTAMP.name]
     if launch_rows.empty:
         raise ValueError(f"No row found with {state_column_name} == {launch_state}")
     return launch_rows.iloc[0]
 
 
-def shift_timestamp_to_launch(df: pd.DataFrame, launch_time_ms: float) -> pd.DataFrame:
+def shift_timestamp_to_launch(df: pd.DataFrame, launch_time_ms: float, data_names) -> pd.DataFrame:
     """
     Subtracts the launch_time_ms from the 'timestamp' column and converts the result to seconds.
     
@@ -36,7 +36,7 @@ def shift_timestamp_to_launch(df: pd.DataFrame, launch_time_ms: float) -> pd.Dat
     Returns:
         A DataFrame with an updated 'timestamp' column in seconds-from-launch.
     """
-    df['timestamp'] = (df['timestamp'] - launch_time_ms) / 1000.0
+    df[data_names.TIMESTAMP.name] = (df[data_names.TIMESTAMP.name] - launch_time_ms) / 1000.0
     return df
 
 
@@ -108,6 +108,7 @@ def plot_column_full_and_launch_window(df: pd.DataFrame,
         yaxis_title=f"{column} ({units.get(column, '')})",
         template="plotly_dark"
     )
+    print("Saved a graph to ", os.path.join(save_path, f"{column}_launch.png"))
     fig_launch.write_image(os.path.join(save_path, f"{column}_launch.png"))
 
 
@@ -115,7 +116,8 @@ def plot_summary_figure(launch_df: pd.DataFrame,
                         states,
                         units: dict,
                         save_path: str,
-                        key_state_event_labels: dict) -> None:
+                        key_state_event_labels: dict,
+                        data_names) -> None:
     """
     Plots a summary figure for the launch window with:
      - Altitude
@@ -132,11 +134,11 @@ def plot_summary_figure(launch_df: pd.DataFrame,
         key_state_event_labels: A dictionary mapping state values to their labels.
     """
     # Compute total acceleration if accelerometer columns exist
-    if {'accelerometer_x', 'accelerometer_y', 'accelerometer_z'}.issubset(launch_df.columns):
+    if {data_names.ACCELEROMETER_X.name, data_names.ACCELEROMETER_Y.name, data_names.ACCELEROMETER_Z.name}.issubset(launch_df.columns):
         launch_df['total_acceleration'] = (
-            launch_df['accelerometer_x']**2 +
-            launch_df['accelerometer_y']**2 +
-            launch_df['accelerometer_z']**2
+            launch_df[data_names.ACCELEROMETER_X.name]**2 +
+            launch_df[data_names.ACCELEROMETER_Y.name]**2 +
+            launch_df[data_names.ACCELEROMETER_Z.name]**2
         )**0.5
     else:
         launch_df['total_acceleration'] = None
@@ -144,11 +146,11 @@ def plot_summary_figure(launch_df: pd.DataFrame,
     fig = go.Figure()
 
     # Altitude trace (if available)
-    if 'altitude' in launch_df.columns:
+    if data_names.ALTITUDE.name in launch_df.columns:
         fig.add_trace(
             go.Scatter(
                 x=launch_df.index,
-                y=launch_df['altitude'].interpolate(),
+                y=launch_df[data_names.ALTITUDE.name].interpolate(),
                 mode='lines',
                 name='Altitude'
             )
@@ -166,8 +168,8 @@ def plot_summary_figure(launch_df: pd.DataFrame,
         )
 
     # Add vertical lines for each detected state change
-    if 'state_change' in launch_df.columns:
-        state_changes = launch_df['state_change'].dropna()
+    if data_names.STATE_CHANGE.name in launch_df.columns:
+        state_changes = launch_df[data_names.STATE_CHANGE.name].dropna()
         color_cycle = ['red', 'lime', 'blue', 'cyan', 'magenta', 'yellow', 'white', 'orange']
         for i, (idx, val) in enumerate(state_changes.items()):
             color = color_cycle[i % len(color_cycle)]
@@ -198,13 +200,23 @@ def plot_summary_figure(launch_df: pd.DataFrame,
                 )
             )
 
+    if data_names.EST_APOGEE.name in launch_df.columns:
+        fig.add_trace(
+            go.Scatter(
+                x=launch_df.index,
+                y=launch_df[data_names.EST_APOGEE.name].interpolate(),
+                mode='lines',
+                name='Estimated Apogee'
+            )
+        )
+
 
     fig.update_layout(
         title="Altitude and Total Acceleration (Launch Window: -2 to +40 s)",
         xaxis_title="Time from Launch (s)",
         yaxis_title=(
-            f"Altitude ({units.get('altitude', '')}) / "
-            f"Total Acceleration ({units.get('accelerometer_x', '')})"
+            f"Altitude ({units.get(data_names.ALTITUDE.name, '')}) / "
+            f"Total Acceleration ({units.get(data_names.ACCELEROMETER_X.name, '')})"
         ),
         template="plotly_dark"
     )
@@ -213,7 +225,17 @@ def plot_summary_figure(launch_df: pd.DataFrame,
         fig.update_xaxes(range=[-2, max(launch_df.index)])
     else:
         fig.update_xaxes(range=[-2, 40])
+
+    # Restrict the y axis to the range of the ALTITUDE data +- 5%
+    if data_names.ALTITUDE.name in launch_df.columns:
+        min_altitude = launch_df[data_names.ALTITUDE.name].min()
+        max_altitude = launch_df[data_names.ALTITUDE.name].max()
+        fig.update_yaxes(range=[min_altitude * 0.95, max_altitude * 1.05])
+
     fig.update_xaxes(showgrid=True)
     fig.update_yaxes(showgrid=True)
 
     fig.write_image(os.path.join(save_path, "launch_summary.png"))
+
+    # Show interactive plot
+    fig.show()

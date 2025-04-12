@@ -1,4 +1,5 @@
 import yaml
+import os 
 
 class DataName:
     def __init__(self, name: str, unit: str, id: int):
@@ -19,8 +20,8 @@ class DataNames:
     def get_name(self, data_id: int) -> str:
         return self.data_definitions[data_id]["name"]
     
-    def get_column_name(self, data_id: int) -> str:
-        return self.data_definitions[data_id]["name"].lower()
+    def get_name_list(self) -> list:
+        return [item["name"] for item in self.data_definitions]
 
 def load_data_name_enum(version: int) -> DataNames:
     """Load the data names from a YAML file and create an Enum"""
@@ -34,6 +35,19 @@ def load_data_name_enum(version: int) -> DataNames:
         data_definitions = yaml.safe_load(file)["data_names"]
 
     return DataNames(data_definitions)
+
+def get_list_of_available_data_name_configs() -> list:
+    """
+    Get a list of available data name configurations.
+    """
+    folder_path = "core/protocols/data_names"
+    files = os.listdir(folder_path)
+    available_files = []
+    for file in files:
+        if file.endswith(".yaml"):
+            version = file.split("_v")[1].split(".yaml")[0]
+            available_files.append(version)
+    return available_files
 
 if __name__ == '__main__':
     """
