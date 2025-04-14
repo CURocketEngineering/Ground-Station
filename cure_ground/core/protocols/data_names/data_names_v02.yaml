@@ -62,3 +62,9 @@ data_names:
   - name: BATTERY_VOLTAGE
     id: 20
     unit: "V"
+  - name: FIN_DEPLOYMENT_AMOUNT
+    id: 21
+    unit: "°"
+  - name: TIME_TO_APOGEE
+    id: 22
+    unit: "s"
