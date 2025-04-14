@@ -100,12 +100,18 @@ def main():
         choices=states_options,
     ).ask()
 
+    # Just summary?
+    just_summary = questionary.confirm(
+        "Just summary graph?",
+        default=False,
+    ).ask()
+
     if generate_graphs:
         graph_save_path = os.path.join(save_folder, "graphs")
         os.makedirs(graph_save_path, exist_ok=True)
         print(f"Graphs will be saved to {graph_save_path}")
         print("Generating graphs...")
-        plot_flight_data(csv_save_path, graph_save_path, selected_version, selected_states_version, just_summary=False)
+        plot_flight_data(csv_save_path, graph_save_path, selected_version, selected_states_version, just_summary=just_summary)
 
     print("Done!")
     
