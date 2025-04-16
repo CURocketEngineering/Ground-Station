@@ -22,11 +22,15 @@ LAUNCH_START_TIMESTAMP = 1550000
 
 def plot_selected_ids(csv_path, output_dir):
     df = pd.read_csv(csv_path, header=None)
-    df = df[df[CSV_TS_COLUMN] >= LAUNCH_START_TIMESTAMP].copy() # new time filter
-
+    df = df[df[CSV_TS_COLUMN] >= LAUNCH_START_TIMESTAMP].copy() # time filter, starts at 1550000ms
+    
+    # "what data do you want?"
     df_alt = df[df[CSV_ID_COLUMN] == 8].copy()         
     df_fin_angle = df[df[CSV_ID_COLUMN] == 21].copy()  
     df_state_change = df[df[CSV_ID_COLUMN] == 15].copy() 
+
+    # needed for starting x-axis on 0, should not be changed
+    actual_start_time = df[CSV_TS_COLUMN].min()
 
     # --- Calculate Total Acceleration --- **ai generated
     print("Calculating total acceleration...")
@@ -43,59 +47,97 @@ def plot_selected_ids(csv_path, output_dir):
     print("Total acceleration calculated.")
     # --- End Total Acceleration Calculation ---
 
-    fig = sp.make_subplots(specs=[[{"secondary_y": True}]])
+    # you need these so you can align your y=0 in the future
+    y_min = min(0, df_alt[CSV_DATA_COLUMN].min())
+    y_max = max(0, df_alt[CSV_DATA_COLUMN].max())
+    y2_min = min(0, df_fin_angle[CSV_DATA_COLUMN].min(), df_accel_pivot['total_accel'].min())
+    y2_max = max(0, df_fin_angle[CSV_DATA_COLUMN].max(), df_accel_pivot['total_accel'].max())
 
-    fig.add_trace(go.Scatter( x=df_alt[CSV_TS_COLUMN], y=df_alt[CSV_DATA_COLUMN], mode="lines", name="Altitude (m)",
-        line=dict(color='deepskyblue', width = 2.5)), secondary_y=False)
-    fig.add_trace(go.Scatter( x=df_fin_angle[CSV_TS_COLUMN], y=df_fin_angle[CSV_DATA_COLUMN], mode="lines", name="Fin Angle (deg)",
-        line=dict(color='orangered', width=2.5)), secondary_y=False)
-    fig.add_trace(go.Scatter( x=df_accel_pivot.index, y=df_accel_pivot['total_accel'], mode="lines", name="Total Accel (m/s²)",
-        line=dict(color='yellow', width=2.5)), secondary_y=True)
+    # time from ms -> s
+    df_alt['time_sec'] = (df_alt[CSV_TS_COLUMN] - actual_start_time) / 1000.0
+    df_fin_angle['time_sec'] = (df_fin_angle[CSV_TS_COLUMN] - actual_start_time) / 1000.0
+    df_state_change['time_sec'] = (df_state_change[CSV_TS_COLUMN] - actual_start_time) / 1000.0
+    df_accel_pivot['time_sec'] = (df_accel_pivot.index - actual_start_time) / 1000.0
 
-    print("Adding state change markers...")
-    y_min = df_alt[CSV_DATA_COLUMN].min() if not df_alt.empty else 0
-    y_max = df_alt[CSV_DATA_COLUMN].max() if not df_alt.empty else 1
+    fig = sp.make_subplots(specs=[[{"secondary_y": True}]]) # just makes it so a secondary axis actually exists and is a thing
 
+    # actually graph the data read in from the csv
+    fig.add_trace(go.Scatter( x=df_alt['time_sec'], y=df_alt[CSV_DATA_COLUMN], mode="lines", name="Altitude (m)",
+        line=dict(color='royalblue', width = 2.5)), secondary_y=False)
+    fig.add_trace(go.Scatter( x=df_fin_angle['time_sec'], y=df_fin_angle[CSV_DATA_COLUMN], mode="lines", name="Fin Angle (deg)",
+        line=dict(color='#FF6347', width=2.5)), secondary_y=True)
+    fig.add_trace(go.Scatter( x=df_accel_pivot['time_sec'], y=df_accel_pivot['total_accel'], mode="lines", name="Total Accel (m/s²)",
+        line=dict(color='lightgreen', width=2.0, dash='dot')), secondary_y=True)
+
+    # reading in state change logs and adding them to the graph
     for index, row in  tqdm(df_state_change.iterrows()):
-        ts = row[CSV_TS_COLUMN]
+        ts_sec = row['time_sec']
         state_id = int(row[CSV_DATA_COLUMN])
-        state_name = STATE_NAMES.get(state_id, f"State {state_id}")
-        fig.add_shape(type="line", layer='below', x0=ts, x1=ts, y0=y_min, y1=y_max,
-            line=dict(color='springgreen', width=2.5, dash="dash"),)
-        # Add annotation
-        fig.add_annotation(x=ts, y=y_max, text=state_name, showarrow=False, yshift=10, # Shift text slightly above the line
-            font=dict(size=9, color="rgba(52, 52, 52, 1)"), bgcolor="lightgray")
+        state_name = STATE_NAMES.get(state_id, f"State {state_id}") # get from data structure
 
+        # add the vertical lines for state changes, and their labels
+        fig.add_shape(type="line", layer='below', x0=ts_sec, x1=ts_sec, y0=y_min, y1=y_max,
+            line=dict(color='magenta', width=2.0, dash="dash"),)
+        fig.add_annotation(x=ts_sec, y=y_max, text=state_name, showarrow=False, yshift=10,
+            font=dict(size=9, color="magenta"), bgcolor="rgba(40, 40, 40, 0.7)")
+
+
+
+    # ***Super important, this is basically all of the graph's styling
     fig.update_layout(
-        # set plot title
-        title=dict(text="AARV Flight Data, 04/13/25", font=dict(color='lightgray')),
+        title=dict( text="<b>AARV Flight Performance Summary</b>", font=dict(size=16, color='white'), # title colors & writing
+            x=0.5, xanchor='center' ), # title pos
 
-        plot_bgcolor='rgba(52, 52, 52, 1)', # halfway between darkgrey and black
-        paper_bgcolor='rgba(52, 52, 52, 1)',
-        font_color='lightgray', # setting default color to gray
-        
-        xaxis=dict( title="Timestamp (ms)",
-            gridcolor='lightgray',
-            linecolor='lightgray'
-        ),
-        yaxis=dict( title="Altitude (m) / Fin Deployment Angle (deg)",
-            gridcolor='lightgray',
-            linecolor='lightgray'
-        ),
-        yaxis2=dict( title="Total Acceleration (m/s²)",
-            gridcolor='rgba(52, 52, 52, 1)',
-            linecolor='rgba(52, 52, 52, 1)',
-            side='right'
+        plot_bgcolor='black', 
+        paper_bgcolor='black', 
+        font=dict(family="Arial, sans-serif", size=11, color='lightgrey'), # general font, gets overwritten in most cases
+
+        xaxis=dict( # what does our x-axis look like?
+            title=dict(text="Time Since Launch Detect (s)", font=dict(size=13)), 
+            gridcolor='rgba(100, 100, 100, 0.5)', 
+            linecolor='darkgrey',
+            zerolinecolor='darkgrey',
+            tickfont_size=11 
         ),
 
-        legend=dict(x=0.01, y=0.99, bgcolor='lightgrey', bordercolor='grey', font=dict(color='rgba(52, 52, 52, 1)')),
+        yaxis=dict( # what does y-axis look like
+            title=dict(text="Altitude (m)", font=dict(size=13)),
+            gridcolor='rgba(100, 100, 100, 0.5)',
+            linecolor='darkgrey',
+            zeroline=True,
+            zerolinecolor='white',
+            tickfont_size=11,
+            range=[y_min, y_max]
+        ),
+
+        yaxis2=dict( # what does secondary y axis look like?
+            title=dict(text="Fin Angle (deg) / Total Accel (m/s²)", font=dict(size=13)),
+            gridcolor='black', # matching background color, alignment is annoying and a lot of the code I did for that was ai, felt gross
+            linecolor='darkgrey',
+            zeroline=True,
+            zerolinecolor='white',
+            overlaying="y", # know that this doesn't work, it's only here for hope
+            side='right',
+            tickfont_size=11,
+            range=[y2_min, y2_max]
+        ),
+
+        legend=dict(
+            x=0.01, y=0.99,
+            bgcolor='rgba(30, 30, 30, 0.8)', 
+            bordercolor='grey',
+            font=dict(color='white', size=10) 
+        ),
         hovermode="x unified",
-        xaxis_rangeslider_visible=True
+        xaxis_rangeslider_visible=True,
+        margin=dict(l=60, r=50, t=70, b=60) 
     )
 
+
+    # ending wrap up stuff
     save_path = os.path.join(output_dir, "aarv_flight.html") 
     fig.write_html(save_path)
-    fig.show()
+    fig.show() # you can comment this out if you don't want the graph jumping out at you whenever you run the code
 
     exit(1)
 
