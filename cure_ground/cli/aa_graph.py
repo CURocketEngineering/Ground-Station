@@ -19,16 +19,18 @@ Y_ACCEL_ID = 1
 Z_ACCEL_ID = 2
 
 LAUNCH_START_TIMESTAMP = 1550000
+NUM_Y_TICKS = 6 # How many ticks to aim for on the y-axes
 
 def plot_selected_ids(csv_path, output_dir):
     df = pd.read_csv(csv_path, header=None)
-    df = df[df[CSV_TS_COLUMN] >= LAUNCH_START_TIMESTAMP].copy() # new time filter
+    df = df[df[CSV_TS_COLUMN] >= LAUNCH_START_TIMESTAMP].copy()
 
+    # data read
     df_alt = df[df[CSV_ID_COLUMN] == 8].copy()         
     df_fin_angle = df[df[CSV_ID_COLUMN] == 21].copy()  
     df_state_change = df[df[CSV_ID_COLUMN] == 15].copy() 
 
-    # --- Calculate Total Acceleration --- 
+    # --- Calculate Total Acceleration --- ** ai generated
     print("Calculating total acceleration...")
     # Filter only accelerometer data
     df_accel = df[df[CSV_ID_COLUMN].isin([X_ACCEL_ID, Y_ACCEL_ID, Z_ACCEL_ID])].copy()
@@ -43,8 +45,54 @@ def plot_selected_ids(csv_path, output_dir):
     print("Total acceleration calculated.")
     # --- End Total Acceleration Calculation ---
 
-    fig = sp.make_subplots(specs=[[{"secondary_y": True}]])
+    # --- Determine Y-Axis Ranges --- ** ai generated
+    # Primary Y (Altitude)
+    y1_min = df_alt[CSV_DATA_COLUMN].min()
+    y1_max = df_alt[CSV_DATA_COLUMN].max()
 
+    if pd.isna(y1_min): y1_min = 0
+    if pd.isna(y1_max): y1_max = y1_min + 100
+    if y1_max <= y1_min: y1_max = y1_min + 100 # Ensure max > min
+
+    # Secondary Y (Fin Angle & Total Accel) - Find combined range
+    y2_min_fin = df_fin_angle[CSV_DATA_COLUMN].min()
+    y2_max_fin = df_fin_angle[CSV_DATA_COLUMN].max()
+    y2_min_acc = df_accel_pivot['total_accel'].min()
+    y2_max_acc = df_accel_pivot['total_accel'].max()
+
+    # Combine ranges, handling potential NaNs or empty data
+    all_y2_vals = []
+    all_y2_vals.extend(df_fin_angle[CSV_DATA_COLUMN].dropna().tolist())
+    all_y2_vals.extend(df_accel_pivot['total_accel'].dropna().tolist())
+
+    y2_min = min(all_y2_vals)
+    y2_max = max(all_y2_vals)
+
+    if pd.isna(y2_min): y2_min = 0
+    if pd.isna(y2_max): y2_max = y2_min + 100
+    if y2_max <= y2_min: y2_max = y2_min + 100 # Ensure max > min
+
+    # --- Calculate Aligned Tick Values --- ** ai generated
+    print("Calculating aligned ticks...")
+    y1_tickvals = np.linspace(y1_min, y1_max, NUM_Y_TICKS)
+
+    y1_ticktext = []
+    y2_tickvals = []
+    y2_ticktext = []
+    y1_range = y1_max - y1_min
+    y2_range = y2_max - y2_min
+
+    for y1_tick in y1_tickvals:
+        y1_ticktext.append(f"{y1_tick:.2f}") 
+        # Calculate corresponding secondary tick value
+        relative_pos = (y1_tick - y1_min) / y1_range
+        y2_tick = y2_min + relative_pos * y2_range
+        y2_tickvals.append(y2_tick)
+        y2_ticktext.append(f"{y2_tick:.2f}") 
+    # --- End Tick Calculation ---
+
+    fig = sp.make_subplots(specs=[[{"secondary_y": True}]]) # make a secondary y axis for accl
+    # add data to the graph
     fig.add_trace(go.Scatter( x=df_alt[CSV_TS_COLUMN], y=df_alt[CSV_DATA_COLUMN], mode="lines", name="Altitude (m)",
         line=dict(color='deepskyblue', width = 2.5)), secondary_y=False)
     fig.add_trace(go.Scatter( x=df_fin_angle[CSV_TS_COLUMN], y=df_fin_angle[CSV_DATA_COLUMN], mode="lines", name="Fin Angle (deg)",
@@ -52,18 +100,16 @@ def plot_selected_ids(csv_path, output_dir):
     fig.add_trace(go.Scatter( x=df_accel_pivot.index, y=df_accel_pivot['total_accel'], mode="lines", name="Total Accel (m/s²)",
         line=dict(color='yellow', width=2.5)), secondary_y=True)
 
-    print("Adding state change markers...")
-    y_min = df_alt[CSV_DATA_COLUMN].min() if not df_alt.empty else 0
-    y_max = df_alt[CSV_DATA_COLUMN].max() if not df_alt.empty else 1
+    y_min = df_alt[CSV_DATA_COLUMN].min()
+    y_max = df_alt[CSV_DATA_COLUMN].max()
 
-    for index, row in  tqdm(df_state_change.iterrows()):
+    for index, row in  tqdm(df_state_change.iterrows()): # how we make vertical marks, like for state changes
         ts = row[CSV_TS_COLUMN]
         state_id = int(row[CSV_DATA_COLUMN])
         state_name = STATE_NAMES.get(state_id, f"State {state_id}")
         fig.add_shape(type="line", layer='below', x0=ts, x1=ts, y0=y_min, y1=y_max,
             line=dict(color='springgreen', width=2.5, dash="dash"),)
-        # Add annotation
-        fig.add_annotation(x=ts, y=y_max, text=state_name, showarrow=False, yshift=10, # Shift text slightly above the line
+        fig.add_annotation(x=ts, y=y_max, text=state_name, showarrow=False, yshift=10, # ***Shift text slightly above the line
             font=dict(size=9, color="rgba(52, 52, 52, 1)"), bgcolor="lightgray")
 
     fig.update_layout(
@@ -80,12 +126,21 @@ def plot_selected_ids(csv_path, output_dir):
         ),
         yaxis=dict( title="Altitude (m) / Fin Deployment Angle (deg)",
             gridcolor='lightgray',
-            linecolor='lightgray'
+            linecolor='lightgray',
+            range=[y1_min, y1_max],
+            tickmode='array' if y1_tickvals is not None else 'auto',
+            tickvals=y1_tickvals if y1_tickvals is not None else None,
+            ticktext=y1_ticktext if y1_ticktext is not None else None
         ),
         yaxis2=dict( title="Total Acceleration (m/s²)",
-            gridcolor='rgba(52, 52, 52, 1)',
-            linecolor='rgba(52, 52, 52, 1)',
-            side='right'
+            gridcolor='lightgray',
+            linecolor='lightgray',
+            side='right',
+            overlaying="y",
+            range=[y2_min, y2_max],
+            tickmode='array' if y2_tickvals is not None else 'auto',
+            tickvals=y2_tickvals if y2_tickvals is not None else None,
+            ticktext=y2_ticktext if y2_ticktext is not None else None
         ),
 
         legend=dict(x=0.01, y=0.99, bgcolor='lightgrey', bordercolor='grey', font=dict(color='rgba(52, 52, 52, 1)')),
@@ -113,7 +168,6 @@ def main():
     # Load the data names
     data_names = load_data_name_enum(selected_version)
     print(f"Loaded data names for version {selected_version}:")
-
     selected_csv_path = "cli/stream-18.csv"
     df = pd.read_csv(selected_csv_path)
     print(df.head())
