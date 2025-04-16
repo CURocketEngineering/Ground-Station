@@ -32,7 +32,9 @@ def plot_selected_ids(csv_path, output_dir):
     # needed for starting x-axis on 0, should not be changed
     actual_start_time = df[CSV_TS_COLUMN].min()
 
-    # --- Calculate Total Acceleration --- **ai generated
+
+
+    # --- Calculate Total Acceleration --- **ai generated function
     print("Calculating total acceleration...")
     # Filter only accelerometer data
     df_accel = df[df[CSV_ID_COLUMN].isin([X_ACCEL_ID, Y_ACCEL_ID, Z_ACCEL_ID])].copy()
@@ -46,6 +48,8 @@ def plot_selected_ids(csv_path, output_dir):
     df_accel_pivot['total_accel'] = np.sqrt(df_accel_pivot['ax']**2 + df_accel_pivot['ay']**2 + df_accel_pivot['az']**2)
     print("Total acceleration calculated.")
     # --- End Total Acceleration Calculation ---
+
+
 
     # you need these so you can align your y=0 in the future
     y_min = min(0, df_alt[CSV_DATA_COLUMN].min())
@@ -85,7 +89,7 @@ def plot_selected_ids(csv_path, output_dir):
 
     # ***Super important, this is basically all of the graph's styling
     fig.update_layout(
-        title=dict( text="<b>AARV Flight Performance Summary</b>", font=dict(size=16, color='white'), # title colors & writing
+        title=dict( text="<b>AARV Flight Performance Summary: Launch to Apogee</b>", font=dict(size=16, color='white'), # title colors & writing
             x=0.5, xanchor='center' ), # title pos
 
         plot_bgcolor='black', 
@@ -93,7 +97,7 @@ def plot_selected_ids(csv_path, output_dir):
         font=dict(family="Arial, sans-serif", size=11, color='lightgrey'), # general font, gets overwritten in most cases
 
         xaxis=dict( # what does our x-axis look like?
-            title=dict(text="Time Since Launch Detect (s)", font=dict(size=13)), 
+            title=dict(text="Timestamp Since Data Filtering (s)", font=dict(size=13)), 
             gridcolor='rgba(100, 100, 100, 0.5)', 
             linecolor='darkgrey',
             zerolinecolor='darkgrey',
@@ -122,16 +126,14 @@ def plot_selected_ids(csv_path, output_dir):
             range=[y2_min, y2_max]
         ),
 
-        legend=dict(
-            x=0.01, y=0.99,
-            bgcolor='rgba(30, 30, 30, 0.8)', 
-            bordercolor='grey',
-            font=dict(color='white', size=10) 
-        ),
+        legend=dict( x=0.01, y=0.99, # what does the legend look like?
+            bgcolor='rgba(30, 30, 30, 0.8)', bordercolor='grey', font=dict(color='white', size=10) ),
+        
         hovermode="x unified",
         xaxis_rangeslider_visible=True,
         margin=dict(l=60, r=50, t=70, b=60) 
     )
+
 
 
     # ending wrap up stuff
