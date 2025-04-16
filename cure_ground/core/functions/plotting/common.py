@@ -226,11 +226,10 @@ def plot_summary_figure(launch_df: pd.DataFrame,
     else:
         fig.update_xaxes(range=[-2, 40])
 
-    # Restrict the y axis to the range of the ALTITUDE data +- 5%
+    # Restrict the y axis to the range of 0 to the max ALTITUDE data + 5%
     if data_names.ALTITUDE.name in launch_df.columns:
-        min_altitude = launch_df[data_names.ALTITUDE.name].min()
         max_altitude = launch_df[data_names.ALTITUDE.name].max()
-        fig.update_yaxes(range=[min_altitude * 0.95, max_altitude * 1.05])
+        fig.update_yaxes(range=[0, max_altitude * 1.05])
 
     fig.update_xaxes(showgrid=True)
     fig.update_yaxes(showgrid=True)
