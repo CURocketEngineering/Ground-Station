@@ -12,6 +12,8 @@ from .common import (
     plot_summary_figure
 )
 
+from core.functions.plotting.stacked_summary_plot import plot_stacked_summary_figure
+
 # Replace with actual paths/enums if needed
 from core.protocols.data_names.data_name_loader import load_data_name_enum
 from core.protocols.states.states_loader import load_states_enum
@@ -49,7 +51,7 @@ def plot_flight_data(csv_path: str, save_path: str, data_names_version: int, sta
     df.set_index(data_names.TIMESTAMP.name, inplace=True)
 
     # 6. Create a slice of the data from -2s to +40s for the "launch window"
-    launch_df = create_slice_for_launch_window(df, start=-2, end=40)
+    launch_df = create_slice_for_launch_window(df, start=-2, end=200)
 
     # 7. Gather valid columns from data definitions
     valid_columns = set(d['name'] for d in data_names.data_definitions)
@@ -66,7 +68,7 @@ def plot_flight_data(csv_path: str, save_path: str, data_names_version: int, sta
 
     # 9. Plot the summary figure (altitude, total accel, state changes)
     print("Plotting summary figure...")
-    plot_summary_figure(launch_df, states, units, save_path, key_state_event_labels={
+    plot_stacked_summary_figure(launch_df, states, units, save_path, key_state_event_labels={
         states.STATE_ASCENT.value: "Launch Detect",
         states.STATE_DESCENT.value: "Apogee Detect",
     }, data_names=data_names)
@@ -75,9 +77,9 @@ def plot_flight_data(csv_path: str, save_path: str, data_names_version: int, sta
 # Example usage
 if __name__ == "__main__":
     plot_flight_data(
-        csv_path="../MARTHA_3-8_1.3_B.csv",
-        save_path="3-8_B1_Plots",
-        data_names_version=1,
+        csv_path="/home/ethan/RocketClub/Ground-Station/cure_ground/flight_data/b1_irec_2025/data.csv",
+        save_path="b1_irec_2025_plots",
+        data_names_version=2,
         states_version=1,
         just_summary=True
     )
