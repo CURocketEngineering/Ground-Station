@@ -12,11 +12,11 @@ from .common import (
     plot_summary_figure,
 )
 
-from core.functions.plotting.stacked_summary_plot import plot_stacked_summary_figure
+from cure_ground.core.functions.plotting.stacked_summary_plot import plot_stacked_summary_figure
 
 # Replace with actual paths/enums if needed
-from core.protocols.data_names.data_name_loader import load_data_name_enum
-from core.protocols.states.states_loader import load_states_enum
+from cure_ground.core.protocols.data_names.data_name_loader import load_data_name_enum
+from cure_ground.core.protocols.states.states_loader import load_states_enum
 
 
 def plot_flight_data(csv_path: str, save_path: str, data_names_version: int, states_version: int, just_summary: bool = False) -> None:

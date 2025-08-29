@@ -30,7 +30,7 @@ def load_data_name_enum(version: int) -> DataNames:
     # e.g. 1 -> 01
     version = str(version).zfill(2)
 
-    yaml_path = f"core/protocols/data_names/data_names_v{version}.yaml"
+    yaml_path = f"cure_ground/core/protocols/data_names/data_names_v{version}.yaml"
     with open(yaml_path, "r") as file:
         data_definitions = yaml.safe_load(file)["data_names"]
 
@@ -40,7 +40,7 @@ def get_list_of_available_data_name_configs() -> list:
     """
     Get a list of available data name configurations.
     """
-    folder_path = "core/protocols/data_names"
+    folder_path = "cure_ground/core/protocols/data_names"
     files = os.listdir(folder_path)
     available_files = []
     for file in files:

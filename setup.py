@@ -14,6 +14,7 @@ setup(
         "kaleido>=0.2.1",
         "questionary",
         "plotly",
+        "pyyaml",
     ],
     entry_points={
         "console_scripts": [
