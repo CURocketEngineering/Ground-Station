@@ -11,6 +11,10 @@ setup(
         "pandas>=2.0.0",
         "matplotlib>=3.7.0",
         "tqdm>=4.65.0",
+        "kaleido>=0.2.1",
+        "questionary",
+        "plotly",
+        "pyyaml",
     ],
     entry_points={
         "console_scripts": [

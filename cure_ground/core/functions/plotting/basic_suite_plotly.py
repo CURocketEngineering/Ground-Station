@@ -9,14 +9,14 @@ from .common import (
     shift_timestamp_to_launch,
     create_slice_for_launch_window,
     plot_column_full_and_launch_window,
-    plot_summary_figure
+    plot_summary_figure,
 )
 
-from core.functions.plotting.stacked_summary_plot import plot_stacked_summary_figure
+from cure_ground.core.functions.plotting.stacked_summary_plot import plot_stacked_summary_figure
 
 # Replace with actual paths/enums if needed
-from core.protocols.data_names.data_name_loader import load_data_name_enum
-from core.protocols.states.states_loader import load_states_enum
+from cure_ground.core.protocols.data_names.data_name_loader import load_data_name_enum
+from cure_ground.core.protocols.states.states_loader import load_states_enum
 
 
 def plot_flight_data(csv_path: str, save_path: str, data_names_version: int, states_version: int, just_summary: bool = False) -> None:
@@ -77,8 +77,8 @@ def plot_flight_data(csv_path: str, save_path: str, data_names_version: int, sta
 # Example usage
 if __name__ == "__main__":
     plot_flight_data(
-        csv_path="/home/ethan/RocketClub/Ground-Station/cure_ground/flight_data/b1_irec_2025/data.csv",
-        save_path="b1_irec_2025_plots",
+        csv_path="/home/ethan/RocketClub/Ground-Station/cure_ground/flight_data/b2_irec_2025/data.csv",
+        save_path="b2_irec_2025_plots",
         data_names_version=2,
         states_version=1,
         just_summary=True

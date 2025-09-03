@@ -9,7 +9,7 @@ def load_states_enum(version: int) -> enum.Enum:
     version = str(version).zfill(2)
 
     # Import the module
-    module = importlib.import_module(f"core.protocols.states.states_v{version}")
+    module = importlib.import_module(f"cure_ground.core.protocols.states.states_v{version}")
 
     # Get the enum object
     states_enum = module.States
@@ -20,7 +20,7 @@ def get_list_of_available_states_configs() -> list:
     """
     Get a list of available states configurations.
     """
-    folder_path = "core/protocols/states"
+    folder_path = "cure_ground/core/protocols/states"
     files = os.listdir(folder_path)
     available_files = []
     for file in files:

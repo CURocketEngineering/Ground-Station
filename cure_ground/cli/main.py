@@ -9,11 +9,11 @@ from rich.console import Console
 from rich.table import Table
 from datetime import datetime
 
-from ..core.functions.ping import ping_device
-from ..core.functions.versions import get_versions
-from ..core.functions.flash_dump import dump_flash, generate_graphs
+from cure_ground.core.functions.ping import ping_device
+from cure_ground.core.functions.versions import get_versions
+from cure_ground.cli.post_flight import post_flight_flow
 
-app = typer.Typer(help="MARTHA Ground Station CLI")
+app = typer.Typer(help="Ground Station CLI")
 console = Console()
 
 def validate_port(port: str) -> str:
@@ -109,6 +109,11 @@ def flash_dump(
     else:
         console.print(f"[red]Failed to dump flash memory: {error}[/red]")
         raise typer.Exit(1)
+    
+@app.command()
+def post_flight():
+    """Run the post-flight data collection & processing flow"""
+    post_flight_flow()
 
 def main():
     app()

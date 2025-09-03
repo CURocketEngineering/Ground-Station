@@ -6,16 +6,16 @@ import os
 import questionary
 import serial
 import serial.tools.list_ports
-from core.protocols.data_names.data_name_loader import load_data_name_enum, get_list_of_available_data_name_configs
-import core.functions.flash_dump
-from core.functions.plotting.basic_suite_plotly import plot_flight_data
-from core.protocols.states.states_loader import load_states_enum, get_list_of_available_states_configs
+from cure_ground.core.protocols.data_names.data_name_loader import load_data_name_enum, get_list_of_available_data_name_configs
+from cure_ground.core.functions.flash_dump import main as flash_dump
+from cure_ground.core.functions.plotting.basic_suite_plotly import plot_flight_data
+from cure_ground.core.protocols.states.states_loader import load_states_enum, get_list_of_available_states_configs
 from tqdm import tqdm
 import pandas as pd 
 
 
 
-def main():
+def post_flight_flow():
     data_name_options = get_list_of_available_data_name_configs()
 
     # Ask the user to select a data name version
@@ -64,10 +64,14 @@ def main():
         ).ask()
 
         # Do the data dump
-        df = core.functions.flash_dump.main(selected_port, False, dump_all_data, data_names)
+        df = flash_dump(selected_port, False, dump_all_data, data_names)
         print("\n--------------------")
         print("Data dump complete.")
         print("---------------------\n")
+
+        if df is None:
+            print("DataFrame returned is None")
+            return 
 
         print(df.head())
 
@@ -124,4 +128,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    post_flight_flow()
