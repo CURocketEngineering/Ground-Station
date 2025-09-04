@@ -1,6 +1,7 @@
-import importlib
 import enum
-import os 
+import importlib
+import os
+
 
 def load_states_enum(version: int) -> enum.Enum:
     """Finds the python file that contains the states enum and returns the enum object"""
@@ -15,6 +16,7 @@ def load_states_enum(version: int) -> enum.Enum:
     states_enum = module.States
 
     return states_enum
+
 
 def get_list_of_available_states_configs() -> list:
     """

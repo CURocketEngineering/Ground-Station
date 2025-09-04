@@ -2,17 +2,24 @@
 Run this on a MARTHA board that has just flown.
 """
 
-import os 
+import os
+
+import pandas as pd
 import questionary
 import serial
 import serial.tools.list_ports
-from cure_ground.core.protocols.data_names.data_name_loader import load_data_name_enum, get_list_of_available_data_name_configs
+from tqdm import tqdm
+
 from cure_ground.core.functions.flash_dump import flash_dump as flash_dump
 from cure_ground.core.functions.plotting.basic_suite_plotly import plot_flight_data
-from cure_ground.core.protocols.states.states_loader import load_states_enum, get_list_of_available_states_configs
-from tqdm import tqdm
-import pandas as pd 
-
+from cure_ground.core.protocols.data_names.data_name_loader import (
+    get_list_of_available_data_name_configs,
+    load_data_name_enum,
+)
+from cure_ground.core.protocols.states.states_loader import (
+    get_list_of_available_states_configs,
+    load_states_enum,
+)
 
 
 def post_flight_flow():
@@ -23,7 +30,7 @@ def post_flight_flow():
         "Select a data name version:",
         choices=data_name_options,
     ).ask()
-    
+
     # Load the data names
     data_names = load_data_name_enum(selected_version)
     print(f"Loaded data names for version {selected_version}:")
@@ -34,7 +41,7 @@ def post_flight_flow():
         default=False,
     ).ask()
     if skip_dump:
-        # Ask for a path a csv file 
+        # Ask for a path a csv file
         found_csv_paths = []
         for root, dirs, files in os.walk(os.getcwd()):
             for file in files:
@@ -71,7 +78,7 @@ def post_flight_flow():
 
         if df is None:
             print("DataFrame returned is None")
-            return 
+            return
 
         print(df.head())
 
@@ -90,8 +97,7 @@ def post_flight_flow():
     df.to_csv(csv_save_path, index=False)
     print(f"Saved data to {csv_save_path}")
 
-
-    # Generate graphs? 
+    # Generate graphs?
     generate_graphs = questionary.confirm(
         "Generate graphs?",
         default=True,
@@ -115,17 +121,16 @@ def post_flight_flow():
         os.makedirs(graph_save_path, exist_ok=True)
         print(f"Graphs will be saved to {graph_save_path}")
         print("Generating graphs...")
-        plot_flight_data(csv_save_path, graph_save_path, selected_version, selected_states_version, just_summary=just_summary)
+        plot_flight_data(
+            csv_save_path,
+            graph_save_path,
+            selected_version,
+            selected_states_version,
+            just_summary=just_summary,
+        )
 
     print("Done!")
-    
 
 
-
-
-
-
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     post_flight_flow()

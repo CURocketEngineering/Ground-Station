@@ -1,7 +1,9 @@
-import yaml
-import os 
-from typing import Dict, List
+import os
 from collections import defaultdict
+from typing import Dict, List
+
+import yaml
+
 
 class DataName:
     def __init__(self, name: str, unit: str, id: int):
@@ -9,13 +11,14 @@ class DataName:
         self.unit = unit
         self.id = id
 
+
 class DataNames:
     def __init__(self, data_definitions: List[Dict]):
         self.data_definitions = data_definitions
         self._names = {}
 
         for item in data_definitions:
-            self._names[item['name']] = DataName(item['name'], item['unit'], item['id'])
+            self._names[item["name"]] = DataName(item["name"], item["unit"], item["id"])
 
     def __getitem__(self, name: str) -> DataName:
         """
@@ -27,12 +30,13 @@ class DataNames:
 
     def get_unit(self, data_id: int) -> str:
         return self.data_definitions[data_id]["unit"]
-    
+
     def get_name(self, data_id: int) -> str:
         return self.data_definitions[data_id]["name"]
-    
+
     def get_name_list(self) -> list:
         return [item["name"] for item in self.data_definitions]
+
 
 def load_data_name_enum(version: int) -> DataNames:
     """Load the data names from a YAML file and create an Enum"""
@@ -47,6 +51,7 @@ def load_data_name_enum(version: int) -> DataNames:
 
     return DataNames(data_definitions)
 
+
 def get_list_of_available_data_name_configs() -> list:
     """
     Get a list of available data name configurations.
@@ -60,7 +65,8 @@ def get_list_of_available_data_name_configs() -> list:
             available_files.append(version)
     return available_files
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     """
     Example Usage:
     """

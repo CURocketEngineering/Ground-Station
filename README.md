@@ -24,7 +24,7 @@ pip install -e .
 
 ## Usage
 
-The Ground-Station can be run by typing the command `cure-ground` in the 
+The Ground-Station can be run by typing the command `cure-ground` in the
 terminal. Use the `--help` argument to get a list of all the available commands
 
 ```bash
@@ -52,7 +52,7 @@ cure-ground --help
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
-### Post Flight 
+### Post Flight
 
 Run the post flight CLI flow to get data off of the connect flight computer
 and then plot the data for quick analysis

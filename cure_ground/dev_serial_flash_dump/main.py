@@ -1,14 +1,16 @@
 import argparse
-import serial 
-import struct
-import time 
-import pandas as pd
-from enum import Enum
-from tqdm import tqdm 
-import datetime 
 
 # For visulazing binary data as text
 import binascii
+import datetime
+import struct
+import time
+from enum import Enum
+
+import pandas as pd
+import serial
+from tqdm import tqdm
+
 
 class DataNames(Enum):
     ACCELEROMETER_X = 0
@@ -36,6 +38,7 @@ class DataNames(Enum):
     def __str__(self):
         return self.name.lower()
 
+
 """
 Dump spec WIP
 
@@ -44,6 +47,7 @@ Dump spec WIP
 1 byte ('\n' spacing, char/uint8_t)
 
 """
+
 
 def read_all(ser):
     print("Reading from serial...")
@@ -58,42 +62,41 @@ def read_all(ser):
         if chunk[:3] == b"lsh":
             # print("LSH")
             pages.append(chunk[3:])
-        elif b'EOF' in chunk:
+        elif b"EOF" in chunk:
             print("\nEOF: ", chunk)
             break
         else:
             print("\nInvalid chunk: ", chunk)
             break
         if i % 16 == 0:
-            print("Read: ", len(pages), "pages", end='\r')
+            print("Read: ", len(pages), "pages", end="\r")
 
         # Send the 'n' to get the next page
-        ser.write(b'n')
+        ser.write(b"n")
     print("\nREAD ALL DONE")
     return pages
+
 
 def main(port, stat_only, all_data):
     # 1. Establish connection
     ser = serial.Serial(port, 115200)
 
     # 1.4 clear the buffer
-    time.sleep(.1)
+    time.sleep(0.1)
     while ser.in_waiting:
         print("Clearing: ", len(ser.read(ser.in_waiting)), "bytes")
         ser.read(ser.in_waiting)
-        time.sleep(.1)
+        time.sleep(0.1)
 
     # 1.5 print out the status first
-    ser.write(b'status\n')
-    time.sleep(.2)
+    ser.write(b"status\n")
+    time.sleep(0.2)
     print("Status: ")
     read = ser.read(ser.in_waiting)
-    print(read.decode('utf-8'))
-    
+    print(read.decode("utf-8"))
 
     if stat_only:
         return
-
 
     # 2. Send the command to dump the flash memory
     # Clear the incoming buffer
@@ -101,36 +104,33 @@ def main(port, stat_only, all_data):
         print("Clearing: ", ser.read(ser.in_waiting))
 
     if all_data:
-        ser.write(b'dump -a\n')
+        ser.write(b"dump -a\n")
     else:
-        ser.write(b'dump\n')
-
+        ser.write(b"dump\n")
 
     # 2.5 Read until we eat a \n, \r, and 's' char for alginment in that order
-    a_queue = ['a', 'b', 'c', 'd', 'e', 'f']
-    
+    a_queue = ["a", "b", "c", "d", "e", "f"]
+
     while True:
         try:
-            data = ser.read(1).decode('utf-8')
+            data = ser.read(1).decode("utf-8")
         except UnicodeDecodeError:
             print("Can't decode: ", data)
         if data == a_queue[0]:
             a_queue.pop(0)
             # print("Popped: ", data)
         else:
-            a_queue = ['a', 'b', 'c', 'd', 'e', 'f']
+            a_queue = ["a", "b", "c", "d", "e", "f"]
             # print("Failed to pop: ", data)
 
         if not a_queue:
             break
 
     print("Aligned!!!")
-        
-
 
     # 3. Receive the data
     all_pages = read_all(ser)
-    
+
     # 3.5 Parse the data
     data_stream = []
 
@@ -140,15 +140,13 @@ def main(port, stat_only, all_data):
         for i in range(0, len(page), 5):
             # print("i: ", i, "page len: ", len(page))
             name = page[i]
-            value = page[i+1:i+5]
+            value = page[i + 1 : i + 5]
             # print(len(value))
             if name == 14:
-                value = struct.unpack('<I', value)[0]
+                value = struct.unpack("<I", value)[0]
             else:
-                value = struct.unpack('<f', value)[0]
+                value = struct.unpack("<f", value)[0]
             data_stream.append((name, value))
-
-
 
     print()
     print("Processing")
@@ -177,26 +175,27 @@ def main(port, stat_only, all_data):
     expected_columns = [str(d) for d in DataNames]
     df = pd.DataFrame(rows, columns=expected_columns)
 
-
     # Data name
     data_name = "flight_data_" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + ".csv"
     # 5. Save the data to a CSV file
     df.to_csv(data_name, index=False)
 
     print("Wrote", len(df), "rows to", data_name)
-    print("Latest timestamp: ", df['timestamp'].iloc[-1])
-    print("Greatest timestamp: ", df['timestamp'].max())
-    print("Smallest timestamp: ", df['timestamp'].min())
-    print("Number of unique flight ids: ", df['flight_id'].nunique())
-    print("Unique flight ids: ", df['flight_id'].unique())
+    print("Latest timestamp: ", df["timestamp"].iloc[-1])
+    print("Greatest timestamp: ", df["timestamp"].max())
+    print("Smallest timestamp: ", df["timestamp"].min())
+    print("Number of unique flight ids: ", df["flight_id"].nunique())
+    print("Unique flight ids: ", df["flight_id"].unique())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Capture the serial port as the command line argument
-    parser = argparse.ArgumentParser(description='Dump the serial flash memory')
-    parser.add_argument('port', help='The serial port to connect to')
+    parser = argparse.ArgumentParser(description="Dump the serial flash memory")
+    parser.add_argument("port", help="The serial port to connect to")
     # Stat only
-    parser.add_argument('--stat', action='store_true', help='Print the status of the device only')
-    parser.add_argument('-a', '--all', action='store_true', help='Dump all the data, ignoring empty pages')
+    parser.add_argument("--stat", action="store_true", help="Print the status of the device only")
+    parser.add_argument(
+        "-a", "--all", action="store_true", help="Dump all the data, ignoring empty pages"
+    )
     args = parser.parse_args()
     main(args.port, args.stat, args.all)

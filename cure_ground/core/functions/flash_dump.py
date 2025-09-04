@@ -1,15 +1,17 @@
 import argparse
-import serial 
-import struct
-import time 
-import pandas as pd
-from enum import Enum
-from tqdm import tqdm 
-import datetime 
-from cure_ground.core.protocols.data_names.data_name_loader import DataNames
 
 # For visulazing binary data as text
 import binascii
+import datetime
+import struct
+import time
+from enum import Enum
+
+import pandas as pd
+import serial
+from tqdm import tqdm
+
+from cure_ground.core.protocols.data_names.data_name_loader import DataNames
 
 """
 Dump spec WIP
@@ -19,6 +21,7 @@ Dump spec WIP
 1 byte ('\n' spacing, char/uint8_t)
 
 """
+
 
 def read_all(ser):
     print("Reading from serial...")
@@ -33,37 +36,35 @@ def read_all(ser):
         if chunk[:3] == b"lsh":
             # print("LSH")
             pages.append(chunk[3:])
-        elif b'EOF' in chunk:
+        elif b"EOF" in chunk:
             print("\nEOF: ", chunk)
             break
         else:
             print("\nInvalid chunk: ", chunk)
             break
         if i % 16 == 0:
-            print("Read: ", len(pages), "pages", end='\r')
+            print("Read: ", len(pages), "pages", end="\r")
 
         # Send the 'n' to get the next page
-        ser.write(b'n')
+        ser.write(b"n")
     print("\nREAD ALL DONE")
     return pages
 
-def flash_dump(port: str,
-               stat_only: bool,
-               all_data: bool,
-               date_names: DataNames):
+
+def flash_dump(port: str, stat_only: bool, all_data: bool, date_names: DataNames):
     """
     Dumps flight data from the rocket's flash memory via serial communication.
-    
+
     This function establishes a serial connection to the rocket's onboard system and
     retrieves stored flight data from flash memory. The data is parsed according to
     a binary protocol where each data point consists of:
     - 1 byte: data type identifier (uint8_t)
     - 4 bytes: value (float or uint32_t depending on data type)
     - Optional newline spacing
-    
+
     The function handles data alignment, reads paginated data from the device,
     and converts the binary stream into a structured pandas DataFrame.
-    
+
     Args:
         port (str): Serial port identifier (e.g., '/dev/ttyUSB0' or 'COM3')
         stat_only (bool): If True, only retrieves and displays device status
@@ -73,17 +74,17 @@ def flash_dump(port: str,
         date_names (DataNames): Data names configuration object containing
                                mappings between data IDs and their corresponding
                                names, units, and column definitions
-    
+
     Returns:
         pandas.DataFrame or None: A DataFrame containing the flight data with columns
                                  corresponding to the data names defined in date_names.
                                  Returns None if stat_only is True.
-    
+
     Raises:
         serial.SerialException: If serial port cannot be opened or communication fails
         struct.error: If binary data cannot be unpacked properly
         UnicodeDecodeError: If alignment data cannot be decoded
-    
+
     Protocol Details:
         - Baud rate: 115200
         - Data format: Binary, little-endian
@@ -91,7 +92,7 @@ def flash_dump(port: str,
         - Alignment sequence: 'abcdef'
         - Timestamp ID: 14 (triggers new row creation)
         - End marker: 'EOF' in data stream
-    
+
     Example:
         >>> from cure_ground.core.protocols.data_names.data_name_loader import load_data_name_enum
         >>> data_names = load_data_name_enum(1)
@@ -102,23 +103,21 @@ def flash_dump(port: str,
     ser = serial.Serial(port, 115200)
 
     # 1.4 clear the buffer
-    time.sleep(.1)
+    time.sleep(0.1)
     while ser.in_waiting:
         print("Clearing: ", len(ser.read(ser.in_waiting)), "bytes")
         ser.read(ser.in_waiting)
-        time.sleep(.1)
+        time.sleep(0.1)
 
     # 1.5 print out the status first
-    ser.write(b'status\n')
-    time.sleep(.2)
+    ser.write(b"status\n")
+    time.sleep(0.2)
     print("Status: ")
     read = ser.read(ser.in_waiting)
-    print(read.decode('utf-8'))
-    
+    print(read.decode("utf-8"))
 
     if stat_only:
         return
-
 
     # 2. Send the command to dump the flash memory
     # Clear the incoming buffer
@@ -126,17 +125,16 @@ def flash_dump(port: str,
         print("Clearing: ", ser.read(ser.in_waiting))
 
     if all_data:
-        ser.write(b'dump -a\n')
+        ser.write(b"dump -a\n")
     else:
-        ser.write(b'dump\n')
-
+        ser.write(b"dump\n")
 
     # 2.5 Read until we eat a \n, \r, and 's' char for alginment in that order
-    a_queue = ['a', 'b', 'c', 'd', 'e', 'f']
-    
+    a_queue = ["a", "b", "c", "d", "e", "f"]
+
     while True:
         try:
-            data = ser.read(1).decode('utf-8')
+            data = ser.read(1).decode("utf-8")
         except UnicodeDecodeError:
             print("Failed to decode last byte")
             continue
@@ -144,19 +142,17 @@ def flash_dump(port: str,
             a_queue.pop(0)
             # print("Popped: ", data)
         else:
-            a_queue = ['a', 'b', 'c', 'd', 'e', 'f']
+            a_queue = ["a", "b", "c", "d", "e", "f"]
             # print("Failed to pop: ", data)
 
         if not a_queue:
             break
 
     print("Aligned!!!")
-        
-
 
     # 3. Receive the data
     all_pages = read_all(ser)
-    
+
     # 3.5 Parse the data
     data_stream = []
 
@@ -166,15 +162,13 @@ def flash_dump(port: str,
         for i in range(0, len(page), 5):
             # print("i: ", i, "page len: ", len(page))
             name = page[i]
-            value = page[i+1:i+5]
+            value = page[i + 1 : i + 5]
             # print(len(value))
             if name == 14:
-                value = struct.unpack('<I', value)[0]
+                value = struct.unpack("<I", value)[0]
             else:
-                value = struct.unpack('<f', value)[0]
+                value = struct.unpack("<f", value)[0]
             data_stream.append((name, value))
-
-
 
     print()
     print("Processing")
@@ -203,5 +197,4 @@ def flash_dump(port: str,
     expected_columns = date_names.get_name_list()
     df = pd.DataFrame(rows, columns=expected_columns)
 
-
-    return df 
+    return df

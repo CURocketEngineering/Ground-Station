@@ -1,8 +1,7 @@
-import enum 
-
+import enum
 
 """
-States.h 
+States.h
 
 #ifndef FLIGHT_STATES_H
 #define FLIGHT_STATES_H
@@ -22,6 +21,7 @@ enum FlightState {
 #endif
 
 """
+
 
 class States(enum.Enum):
     STATE_UNARMED = 0

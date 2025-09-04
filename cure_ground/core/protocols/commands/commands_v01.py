@@ -1,3 +1,2 @@
-
 CURE_PING = 0x01
 CURE_DUMP = 0x02
