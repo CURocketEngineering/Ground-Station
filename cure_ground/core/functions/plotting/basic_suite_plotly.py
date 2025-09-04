@@ -34,10 +34,14 @@ def plot_flight_data(csv_path: str, save_path: str, data_names_version: int, sta
     data_names = load_data_name_enum(data_names_version)
     states = load_states_enum(states_version)
     df = load_csv(csv_path)
+    # ALLCAPS all the column names
+    df.columns = df.columns.str.upper()
+
+
     os.makedirs(save_path, exist_ok=True)
 
     # 2. Identify the column name for "STATE_CHANGE" and numeric code for "STATE_ASCENT"
-    state_col = data_names.STATE_CHANGE.name
+    state_col = data_names["STATE_CHANGE"].name
     launch_state_value = states.STATE_ASCENT.value
 
     # 3. Determine launch time (ms)
@@ -47,8 +51,8 @@ def plot_flight_data(csv_path: str, save_path: str, data_names_version: int, sta
     df = shift_timestamp_to_launch(df, launch_time_ms, data_names)
 
     # 5. Sort by timestamp and set as index
-    df.sort_values(data_names.TIMESTAMP.name, inplace=True)
-    df.set_index(data_names.TIMESTAMP.name, inplace=True)
+    df.sort_values(data_names["TIMESTAMP"].name, inplace=True)
+    df.set_index(data_names["TIMESTAMP"].name, inplace=True)
 
     # 6. Create a slice of the data from -2s to +40s for the "launch window"
     launch_df = create_slice_for_launch_window(df, start=-2, end=200)
@@ -62,7 +66,7 @@ def plot_flight_data(csv_path: str, save_path: str, data_names_version: int, sta
         iterator = tqdm(df.columns, desc="Plotting columns", unit="column")
         for column in iterator:
             iterator.set_postfix(column=column)
-            if column not in valid_columns or column == data_names.TIMESTAMP.name:
+            if column not in valid_columns or column == data_names["TIMESTAMP"].name:
                 continue
             plot_column_full_and_launch_window(df, launch_df, column, units, save_path)
 

@@ -6,6 +6,7 @@ import pandas as pd
 from enum import Enum
 from tqdm import tqdm 
 import datetime 
+from cure_ground.core.protocols.data_names.data_name_loader import DataNames
 
 # For visulazing binary data as text
 import binascii
@@ -46,7 +47,57 @@ def read_all(ser):
     print("\nREAD ALL DONE")
     return pages
 
-def main(port, stat_only, all_data, DataNames):
+def flash_dump(port: str,
+               stat_only: bool,
+               all_data: bool,
+               date_names: DataNames):
+    """
+    Dumps flight data from the rocket's flash memory via serial communication.
+    
+    This function establishes a serial connection to the rocket's onboard system and
+    retrieves stored flight data from flash memory. The data is parsed according to
+    a binary protocol where each data point consists of:
+    - 1 byte: data type identifier (uint8_t)
+    - 4 bytes: value (float or uint32_t depending on data type)
+    - Optional newline spacing
+    
+    The function handles data alignment, reads paginated data from the device,
+    and converts the binary stream into a structured pandas DataFrame.
+    
+    Args:
+        port (str): Serial port identifier (e.g., '/dev/ttyUSB0' or 'COM3')
+        stat_only (bool): If True, only retrieves and displays device status
+                         without dumping flash data
+        all_data (bool): If True, dumps all data from flash memory using 'dump -a'
+                        command. If False, uses standard 'dump' command
+        date_names (DataNames): Data names configuration object containing
+                               mappings between data IDs and their corresponding
+                               names, units, and column definitions
+    
+    Returns:
+        pandas.DataFrame or None: A DataFrame containing the flight data with columns
+                                 corresponding to the data names defined in date_names.
+                                 Returns None if stat_only is True.
+    
+    Raises:
+        serial.SerialException: If serial port cannot be opened or communication fails
+        struct.error: If binary data cannot be unpacked properly
+        UnicodeDecodeError: If alignment data cannot be decoded
+    
+    Protocol Details:
+        - Baud rate: 115200
+        - Data format: Binary, little-endian
+        - Page size: 255 bytes + 3 byte header
+        - Alignment sequence: 'abcdef'
+        - Timestamp ID: 14 (triggers new row creation)
+        - End marker: 'EOF' in data stream
+    
+    Example:
+        >>> from cure_ground.core.protocols.data_names.data_name_loader import load_data_name_enum
+        >>> data_names = load_data_name_enum(1)
+        >>> df = flash_dump('/dev/ttyUSB0', stat_only=False, all_data=True, date_names=data_names)
+        >>> print(df.head())
+    """
     # 1. Establish connection
     ser = serial.Serial(port, 115200)
 
@@ -87,7 +138,8 @@ def main(port, stat_only, all_data, DataNames):
         try:
             data = ser.read(1).decode('utf-8')
         except UnicodeDecodeError:
-            print("Can't decode: ", data)
+            print("Failed to decode last byte")
+            continue
         if data == a_queue[0]:
             a_queue.pop(0)
             # print("Popped: ", data)
@@ -131,14 +183,14 @@ def main(port, stat_only, all_data, DataNames):
     rows = []
     building_row = {}
     for d in tqdm(data_stream):
-        if d[0] == DataNames.TIMESTAMP.id:
+        if d[0] == date_names["TIMESTAMP"].id:
             # Time to start a new row.
             if building_row:  # Only add non-empty rows.
                 rows.append(building_row)
             building_row = {}
         try:
             # Use the enum's name (or however you want to map it)
-            key = DataNames.get_name(d[0])
+            key = date_names.get_name(d[0])
             building_row[key] = d[1]
         except ValueError:
             print("Invalid name: ", d[0])
@@ -148,7 +200,7 @@ def main(port, stat_only, all_data, DataNames):
     if building_row:
         rows.append(building_row)
 
-    expected_columns = DataNames.get_name_list()
+    expected_columns = date_names.get_name_list()
     df = pd.DataFrame(rows, columns=expected_columns)
 
 

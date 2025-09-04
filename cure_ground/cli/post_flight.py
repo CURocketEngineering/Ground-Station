@@ -7,7 +7,7 @@ import questionary
 import serial
 import serial.tools.list_ports
 from cure_ground.core.protocols.data_names.data_name_loader import load_data_name_enum, get_list_of_available_data_name_configs
-from cure_ground.core.functions.flash_dump import main as flash_dump
+from cure_ground.core.functions.flash_dump import flash_dump as flash_dump
 from cure_ground.core.functions.plotting.basic_suite_plotly import plot_flight_data
 from cure_ground.core.protocols.states.states_loader import load_states_enum, get_list_of_available_states_configs
 from tqdm import tqdm

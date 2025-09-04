@@ -3,6 +3,7 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import os
 import pandas as pd
+from cure_ground.core.protocols.data_names.data_name_loader import DataNames
 
 FT_PER_M = 3.28084                  # handy constant
 
@@ -12,26 +13,26 @@ def plot_stacked_summary_figure(
         units: dict,
         save_path: str,
         key_state_event_labels: dict,
-        data_names) -> None:
+        data_names: DataNames) -> None:
 
     # ── 1. Pre-compute total acceleration ───────────────────────────────────
     accel_cols = {
-        data_names.ACCELEROMETER_X.name,
-        data_names.ACCELEROMETER_Y.name,
-        data_names.ACCELEROMETER_Z.name,
+        data_names["ACCELEROMETER_X"].name,
+        data_names["ACCELEROMETER_Y"].name,
+        data_names["ACCELEROMETER_Z"].name,
     }
     if accel_cols.issubset(launch_df.columns):
         launch_df["total_acceleration"] = (
-            launch_df[data_names.ACCELEROMETER_X.name] ** 2 +
-            launch_df[data_names.ACCELEROMETER_Y.name] ** 2 +
-            launch_df[data_names.ACCELEROMETER_Z.name] ** 2
+            launch_df[data_names["ACCELEROMETER_X"].name] ** 2 +
+            launch_df[data_names["ACCELEROMETER_Y"].name] ** 2 +
+            launch_df[data_names["ACCELEROMETER_Z"].name] ** 2
         ) ** 0.5
     else:
         launch_df["total_acceleration"] = None
 
     # ── 1 b.  ✓  QUICK SUMMARY VALUES  ──────────────────────────────────────
-    max_alt_m   = launch_df[data_names.ALTITUDE.name].max()
-    min_alt_m   = launch_df[data_names.ALTITUDE.name].min()
+    max_alt_m   = launch_df[data_names["ALTITUDE"].name].max()
+    min_alt_m   = launch_df[data_names["ALTITUDE"].name].min()
     apogee_ft   = (max_alt_m - min_alt_m) * FT_PER_M
     max_accel   = launch_df["total_acceleration"].max()
 
@@ -53,11 +54,11 @@ def plot_stacked_summary_figure(
     )
 
      # ── 3. Altitude trace (row 1) ────────────────────────────────────────────
-    if data_names.ALTITUDE.name in launch_df.columns:
+    if data_names["ALTITUDE"].name in launch_df.columns:
         fig.add_trace(
             go.Scatter(
                 x=launch_df.index,
-                y=launch_df[data_names.ALTITUDE.name].interpolate(),
+                y=launch_df[data_names["ALTITUDE"].name].interpolate(),
                 mode="lines",
                 name="Altitude",
             ),
@@ -65,11 +66,11 @@ def plot_stacked_summary_figure(
         )
 
     # Estimated apogee (optional) — row 1
-    if data_names.EST_APOGEE.name in launch_df.columns and not launch_df[data_names.EST_APOGEE.name].isnull().all():
+    if data_names["EST_APOGEE"].name in launch_df.columns and not launch_df[data_names["EST_APOGEE"].name].isnull().all():
         fig.add_trace(
             go.Scatter(
                 x=launch_df.index,
-                y=launch_df[data_names.EST_APOGEE.name].interpolate(),
+                y=launch_df[data_names["EST_APOGEE"].name].interpolate(),
                 mode="lines",
                 name="Estimated Apogee",
                 line=dict(dash="dot"),
@@ -90,8 +91,9 @@ def plot_stacked_summary_figure(
         )
 
     # ── 5. Vertical lines for each state change (draw across both rows) ─────
-    if data_names.STATE_CHANGE.name in launch_df.columns:
-        state_changes = launch_df[data_names.STATE_CHANGE.name].dropna()
+    apogee_detection_delay = float("inf")
+    if data_names["STATE_CHANGE"].name in launch_df.columns:
+        state_changes = launch_df[data_names["STATE_CHANGE"].name].dropna()
         color_cycle = ['red', 'lime', 'blue', 'cyan', 'magenta',
                        'yellow', 'white', 'orange']
         for i, (x_pos, state_val) in enumerate(state_changes.items()):
@@ -108,7 +110,12 @@ def plot_stacked_summary_figure(
             # If its apogee, then calculate apogee detection delay
             if state_val == states.STATE_DESCENT.value:
                 # x_pos - max altitude index
-                apogee_detection_delay = x_pos - launch_df[data_names.ALTITUDE.name].idxmax()
+
+                # Get the max altitude between launch and the x_pos
+                max_altitude_idx = launch_df[data_names["ALTITUDE"].name].loc[:x_pos].idxmax()
+
+                apogee_detection_delay = pd.to_numeric(x_pos, errors='coerce') - pd.to_numeric(max_altitude_idx, errors='coerce')
+                apogee_detection_delay = float(apogee_detection_delay)
 
             # Draw the vertical line through all subplots
             fig.add_vline(
@@ -148,12 +155,12 @@ def plot_stacked_summary_figure(
 
     # Y-axis labels for each subplot
     fig.update_yaxes(
-        title_text=f"Altitude ({units.get(data_names.ALTITUDE.name, 'm')})",
+        title_text=f"Altitude ({units.get(data_names['ALTITUDE'].name, 'm')})",
         row=1, col=1,
         range=[0, max_alt_m * 1.1]  # Add some padding above max altitude
     )
     fig.update_yaxes(
-        title_text=f"Total Acceleration ({units.get(data_names.ACCELEROMETER_X.name, 'm/s²')})",
+        title_text=f"Total Acceleration ({units.get(data_names['ACCELEROMETER_X'].name, 'm/s²')})",
         row=2, col=1
     )
 

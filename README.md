@@ -24,7 +24,39 @@ pip install -e .
 
 ## Usage
 
-The ground station provides three main commands:
+The Ground-Station can be run by typing the command `cure-ground` in the 
+terminal. Use the `--help` argument to get a list of all the available commands
+
+```bash
+cure-ground --help
+```
+
+```txt
+❯ cure-ground --help
+
+ Usage: cure-ground [OPTIONS] COMMAND [ARGS]...
+
+ Ground Station CLI
+
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --install-completion          Install completion for the current shell.                              │
+│ --show-completion             Show completion for the current shell, to copy it or customize the     │
+│                               installation.                                                          │
+│ --help                        Show this message and exit.                                            │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────────╮
+│ ping          Test connection to MARTHA device                                                       │
+│ versions      Get version information from MARTHA device                                             │
+│ flash-dump    Download and save flash memory contents                                                │
+│ post-flight   Run the post-flight data collection & processing flow                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
+```
+
+### Post Flight 
+
+Run the post flight CLI flow to get data off of the connect flight computer
+and then plot the data for quick analysis
+
 
 ### Ping Test
 

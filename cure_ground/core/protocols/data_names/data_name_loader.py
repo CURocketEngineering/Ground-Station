@@ -1,18 +1,29 @@
 import yaml
 import os 
+from typing import Dict, List
+from collections import defaultdict
 
 class DataName:
     def __init__(self, name: str, unit: str, id: int):
         self.name = name
-        self.column_name = name.lower()
         self.unit = unit
         self.id = id
 
 class DataNames:
-    def __init__(self, data_definitions: dict):
+    def __init__(self, data_definitions: List[Dict]):
         self.data_definitions = data_definitions
+        self._names = {}
+
         for item in data_definitions:
-            self.__setattr__(item['name'], DataName(item['name'], item['unit'], item['id']))
+            self._names[item['name']] = DataName(item['name'], item['unit'], item['id'])
+
+    def __getitem__(self, name: str) -> DataName:
+        """
+        Grabs the DataName info for the given name
+        Will raise a KeyError if the name wasn't loaded
+        """
+
+        return self._names[name]
 
     def get_unit(self, data_id: int) -> str:
         return self.data_definitions[data_id]["unit"]
@@ -28,9 +39,9 @@ def load_data_name_enum(version: int) -> DataNames:
 
     # Convert the version to a 2 digit string
     # e.g. 1 -> 01
-    version = str(version).zfill(2)
+    version_str = str(version).zfill(2)
 
-    yaml_path = f"cure_ground/core/protocols/data_names/data_names_v{version}.yaml"
+    yaml_path = f"cure_ground/core/protocols/data_names/data_names_v{version_str}.yaml"
     with open(yaml_path, "r") as file:
         data_definitions = yaml.safe_load(file)["data_names"]
 
@@ -53,6 +64,6 @@ if __name__ == '__main__':
     """
     Example Usage:
     """
-    data_names = load_data_name_enum("cure_ground/core/protocols/data_names/data_names_v01.yaml")
-    print(data_names.ACCELEROMETER_X.name)
+    data_names = load_data_name_enum(1)
+    print(data_names["ACCELEROMETER_X"].name)
     print(data_names.get_unit(0))  # Get the unit associated with the data id of 0
