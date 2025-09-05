@@ -7,7 +7,7 @@ from cure_ground.core.functions.plotting.stacked_summary_plot import plot_stacke
 
 # Replace with actual paths/enums if needed
 from cure_ground.core.protocols.data_names.data_name_loader import load_data_name_enum
-from cure_ground.core.protocols.states.states_loader import load_states_enum
+from cure_ground.core.protocols.states.states_loader import load_states
 
 # If this file is in the same directory as common.py:
 from .common import (
@@ -39,7 +39,7 @@ def plot_flight_data(
     """
     # 1. Load enumerations and CSV
     data_names = load_data_name_enum(data_names_version)
-    states = load_states_enum(states_version)
+    states = load_states(states_version)
     df = load_csv(csv_path)
     # ALLCAPS all the column names
     df.columns = df.columns.str.upper()
@@ -48,7 +48,7 @@ def plot_flight_data(
 
     # 2. Identify the column name for "STATE_CHANGE" and numeric code for "STATE_ASCENT"
     state_col = data_names["STATE_CHANGE"].name
-    launch_state_value = states.STATE_ASCENT.value
+    launch_state_value = states["STATE_ASCENT"].id
 
     # 3. Determine launch time (ms)
     launch_time_ms = get_launch_time(df, state_col, launch_state_value, data_names)
@@ -84,8 +84,8 @@ def plot_flight_data(
         units,
         save_path,
         key_state_event_labels={
-            states.STATE_ASCENT.value: "Launch Detect",
-            states.STATE_DESCENT.value: "Apogee Detect",
+            states["STATE_ASCENT"].id: "Launch Detect",
+            states["STATE_DESCENT"].id: "Apogee Detect",
         },
         data_names=data_names,
     )

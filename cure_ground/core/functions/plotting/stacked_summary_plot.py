@@ -6,13 +6,14 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 from cure_ground.core.protocols.data_names.data_name_loader import DataNames
+from cure_ground.core.protocols.states.states_loader import States
 
 FT_PER_M = 3.28084  # handy constant
 
 
 def plot_stacked_summary_figure(
     launch_df: pd.DataFrame,
-    states,
+    states: States,
     units: dict,
     save_path: str,
     key_state_event_labels: dict,
@@ -120,14 +121,14 @@ def plot_stacked_summary_figure(
 
             # Label lookup
             try:
-                label = states(state_val).name
+                label = states.get_by_id(state_val).name
             except Exception:
                 label = f"State {state_val}"
 
             anno_text = key_state_event_labels.get(state_val, label)
 
             # If its apogee, then calculate apogee detection delay
-            if state_val == states.STATE_DESCENT.value:
+            if state_val == states["STATE_DESCENT"].id:
                 # x_pos - max altitude index
 
                 # Get the max altitude between launch and the x_pos

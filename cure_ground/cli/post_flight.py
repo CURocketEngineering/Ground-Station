@@ -18,7 +18,6 @@ from cure_ground.core.protocols.data_names.data_name_loader import (
 )
 from cure_ground.core.protocols.states.states_loader import (
     get_list_of_available_states_configs,
-    load_states_enum,
 )
 
 
