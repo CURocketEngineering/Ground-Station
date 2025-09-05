@@ -20,7 +20,7 @@ repos:
     rev: 24.8.0
     hooks:
       - id: black
-        args: [--line-length=100]
+        args: [--line-length=80]
         language_version: python3
 
   # Linting (fast), plus import sorting via Ruff
@@ -31,7 +31,7 @@ repos:
         args:
           - --fix
           - --unsafe-fixes
-          - --line-length=100
+          - --line-length=80
           # Enable import sorting:
           - --select=I
           # You can add/adjust rules here (e.g., F,E,I,UP,PERF)
