@@ -161,8 +161,8 @@ cython_debug/
 
 .vscode/
 
-*.png 
-*.csv 
+*.png
+*.csv
 *.csv#
 
 aa-test/

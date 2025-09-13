@@ -1,3 +1,3 @@
 """
-This package contains functions for plotting flight data. 
+This package contains functions for plotting flight data.
 """
