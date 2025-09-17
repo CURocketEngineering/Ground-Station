@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QComboBox
 from PyQt6.QtGui import QFont
+from PyQt6.QtCore import Qt
 
 from view.Styles import BUTTON_STYLE, COMBO_BOX_STYLE, SIDEBAR_STYLE
 
@@ -11,6 +12,7 @@ class Sidebar(QWidget):
         
     def setup_ui(self):
         self.setGeometry(75, 80, 250, 700)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setStyleSheet(SIDEBAR_STYLE)
         self.raise_()  # Ensure sidebar appears above overlay
 
