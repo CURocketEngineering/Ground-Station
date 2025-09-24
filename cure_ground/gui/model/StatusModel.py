@@ -1,14 +1,20 @@
 import re
 import time
-from typing import Dict, Any, Optional
+from typing import Dict, Optional
+from model.DataSource import DataSource
 
 class StatusModel:
-    def __init__(self):
+    def __init__(self, data_source: Optional[DataSource] = None):
         self.status_data = {}
         self.last_update_time = 0
+        self.data_source = data_source
+        
+    def set_data_source(self, data_source: DataSource):
+        # Set the data source for this model
+        self.data_source = data_source
         
     def parse_status_data(self, status_string: str) -> Dict[str, str]:
-        """Parse status data from the device response"""
+        # Parse status data from the device response
         status = {}
         if not status_string:
             return status
@@ -20,23 +26,35 @@ class StatusModel:
             
         return status
     
+    def update_from_data_source(self) -> bool:
+        # Update model from the configured data source
+        if not self.data_source or not self.data_source.is_connected():
+            return False
+            
+        data = self.data_source.get_data()
+        if data:
+            self.status_data = data
+            self.last_update_time = time.time()
+            return True
+        return False
+    
     def update_status(self, status_data: Dict[str, str]):
-        """Update the model with new status data"""
+        # Update the model with new status data
         self.status_data = status_data
         self.last_update_time = time.time()
     
     def get_status_value(self, key: str, default: str = "N/A") -> str:
-        """Get a specific status value"""
+        # Get a specific status value
         return self.status_data.get(key, default)
     
     def get_all_data(self) -> Dict[str, str]:
-        """Get all status data"""
+        # Get all status data
         return self.status_data.copy()
     
     def get_last_update_time(self) -> float:
-        """Get timestamp of last update"""
+        # Get timestamp of last update
         return self.last_update_time
     
     def is_data_fresh(self, max_age_seconds: float = 5.0) -> bool:
-        """Check if data is recent"""
+        # Check if data is recent
         return (time.time() - self.last_update_time) <= max_age_seconds

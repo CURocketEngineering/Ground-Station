@@ -9,12 +9,12 @@ class SerialConnection:
         self.connected = False
         
     def get_available_ports(self) -> List[str]:
-        """Get list of available serial ports"""
+        # Get list of available serial ports
         ports = serial.tools.list_ports.comports()
         return [port.device for port in ports] if ports else ["No Ports Available"]
     
     def connect(self, port: str, baudrate: int = 115200, timeout: float = 1.0) -> bool:
-        """Establish serial connection"""
+        # Establish serial connection
         try:
             self.ser = serial.Serial(port, baudrate, timeout=timeout)
             self.connected = True
@@ -28,13 +28,13 @@ class SerialConnection:
             return False
             
     def disconnect(self):
-        """Close serial connection"""
+        # Close serial connection
         if self.ser and self.ser.is_open:
             self.ser.close()
         self.connected = False
             
     def send_command(self, command: str, add_newline: bool = True) -> bool:
-        """Send command to device"""
+        # Send command to device
         if not self.connected or not self.ser or not self.ser.is_open:
             return False
             
@@ -49,7 +49,7 @@ class SerialConnection:
             return False
             
     def read_response(self, timeout: float = 0.2) -> str:
-        """Read response from device"""
+        # Read response from device
         if not self.connected or not self.ser or not self.ser.is_open:
             return ""
             
@@ -62,10 +62,10 @@ class SerialConnection:
         return ""
     
     def is_connected(self) -> bool:
-        """Check if connection is active"""
+        # Check if connection is active
         return self.connected and self.ser and self.ser.is_open
     
     def clear_buffer(self):
-        """Clear the serial input buffer"""
+        # Clear the serial input buffer
         if self.is_connected():
             self.ser.reset_input_buffer()
