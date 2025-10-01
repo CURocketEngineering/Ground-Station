@@ -32,7 +32,7 @@ class DashboardController:
         # Set up the appropriate data source based on configuration
         if self.use_csv_mock_data:
             # Use CSV mock data
-            csv_source = CSVDataSource(self.csv_file_path, playback_speed=2.0)
+            csv_source = CSVDataSource(self.csv_file_path, playback_speed=15.0)
             if csv_source.connect():
                 self.current_data_source = csv_source
                 self.model.set_data_source(csv_source)
