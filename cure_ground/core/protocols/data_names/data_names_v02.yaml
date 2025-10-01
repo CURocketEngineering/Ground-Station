@@ -1,0 +1,70 @@
+data_names:
+  - name: ACCELEROMETER_X
+    id: 0
+    unit: "m/s²"
+  - name: ACCELEROMETER_Y
+    id: 1
+    unit: "m/s²"
+  - name: ACCELEROMETER_Z
+    id: 2
+    unit: "m/s²"
+  - name: GYROSCOPE_X
+    id: 3
+    unit: "°/s"
+  - name: GYROSCOPE_Y
+    id: 4
+    unit: "°/s"
+  - name: GYROSCOPE_Z
+    id: 5
+    unit: "°/s"
+  - name: TEMPERATURE
+    id: 6
+    unit: "°C"
+  - name: PRESSURE
+    id: 7
+    unit: "hPa"
+  - name: ALTITUDE
+    id: 8
+    unit: "m"
+  - name: MAGNETOMETER_X
+    id: 9
+    unit: "µT"
+  - name: MAGNETOMETER_Y
+    id: 10
+    unit: "µT"
+  - name: MAGNETOMETER_Z
+    id: 11
+    unit: "µT"
+  - name: MEDIAN_ACCELERATION_SQUARED
+    id: 12
+    unit: "m²/s²"
+  - name: AVERAGE_CYCLE_RATE
+    id: 13
+    unit: "Hz"
+  - name: TIMESTAMP
+    id: 14
+    unit: "s"
+  - name: STATE_CHANGE
+    id: 15
+    unit: "enum"
+  - name: FLIGHT_ID
+    id: 16
+    unit: "id"
+  - name: EST_APOGEE
+    id: 17
+    unit: "m"
+  - name: EST_VERTICAL_VELOCITY
+    id: 18
+    unit: "m/s"
+  - name: EST_ALTITUDE
+    id: 19
+    unit: "m"
+  - name: BATTERY_VOLTAGE
+    id: 20
+    unit: "V"
+  - name: FIN_DEPLOYMENT_AMOUNT
+    id: 21
+    unit: "°"
+  - name: TIME_TO_APOGEE
+    id: 22
+    unit: "s"

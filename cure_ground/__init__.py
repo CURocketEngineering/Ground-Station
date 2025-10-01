@@ -1,8 +1,11 @@
 """
 CURE Ground Station package
 """
-from .core import ping_device, get_versions, dump_flash, generate_graphs
-from .cli.main import main as cli_main
+
+from . import cli, core
+from .core import get_versions, ping_device
+
+# from .cli.main import main as cli_main
 
 __version__ = "0.1.0"
-__all__ = ['ping_device', 'get_versions', 'dump_flash', 'generate_graphs', 'cli_main']
+__all__ = ["ping_device", "get_versions", "cli_main", "core", "cli"]

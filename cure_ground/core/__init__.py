@@ -1,6 +1,7 @@
 """
 Core package initialization
 """
-from .functions import ping_device, get_versions, dump_flash, generate_graphs
 
-__all__ = ['ping_device', 'get_versions', 'dump_flash', 'generate_graphs']
+from .functions import get_versions, ping_device
+
+__all__ = ["ping_device", "get_versions"]
