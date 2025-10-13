@@ -18,7 +18,7 @@ class MainWindow(QMainWindow):
         self.setFixedSize(int(1920 / scale_factor), int(1080 / scale_factor))
 
         # Load and set background image
-        self.set_background_image("resources/DashboardImage.png")
+        self.set_background_image("resources/Dashboard.png")
         
         # Load custom font
         self.font_family = self.load_custom_font("resources/NbpInformaFivesix-2dXW.ttf")

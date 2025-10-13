@@ -1,10 +1,13 @@
 import serial
 import serial.tools.list_ports
 import time
-from typing import List, Optional, Tuple
+from typing import List, Optional, Dict
+from .DataSource import DataSource
 
-class SerialConnection:
-    def __init__(self):
+class SerialDataSource(DataSource):
+    def __init__(self, baudrate: int = 115200, timeout: float = 1.0):
+        self.baudrate = baudrate
+        self.timeout = timeout
         self.ser = None
         self.connected = False
         
@@ -13,10 +16,16 @@ class SerialConnection:
         ports = serial.tools.list_ports.comports()
         return [port.device for port in ports] if ports else ["No Ports Available"]
     
-    def connect(self, port: str, baudrate: int = 115200, timeout: float = 1.0) -> bool:
+    def connect(self, port: str = None) -> bool:
         # Establish serial connection
+        if port is None:
+            ports = self.get_available_ports()
+            if not ports or ports[0] == "No Ports Available":
+                return False
+            port = ports[0]
+            
         try:
-            self.ser = serial.Serial(port, baudrate, timeout=timeout)
+            self.ser = serial.Serial(port, self.baudrate, timeout=self.timeout)
             self.connected = True
             # Clear buffer on connect
             time.sleep(0.1)
@@ -27,7 +36,7 @@ class SerialConnection:
             self.connected = False
             return False
             
-    def disconnect(self):
+    def disconnect(self) -> None:
         # Close serial connection
         if self.ser and self.ser.is_open:
             self.ser.close()
@@ -60,6 +69,15 @@ class SerialConnection:
             except UnicodeDecodeError:
                 return "Error decoding response"
         return ""
+    
+    def get_data(self) -> Optional[Dict[str, str]]:
+        # Get data from serial - for direct serial communication
+        # This would be overridden for specific protocols
+        # For generic serial, you might want to read raw data
+        response = self.read_response()
+        if response:
+            return {'raw_data': response}
+        return None
     
     def is_connected(self) -> bool:
         # Check if connection is active

@@ -23,3 +23,7 @@ class DataSource(ABC):
     def is_connected(self) -> bool:
         # Check if connected to data source
         pass
+    
+    def get_type(self) -> str:
+        # Return the data source type name
+        return self.__class__.__name__.replace('DataSource', '').lower()
