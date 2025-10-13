@@ -1,4 +1,3 @@
-# gui/view/Sidebar.py (simpler version)
 from PyQt6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QComboBox, QLabel
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt
@@ -28,7 +27,7 @@ class Sidebar(QWidget):
         layout.addWidget(source_label)
 
         self.data_source_combo = QComboBox()
-        self.data_source_combo.addItems(["Radio", "Serial", "CSV"])
+        self.data_source_combo.addItems(["Select", "Radio", "Serial", "CSV"])
         self.data_source_combo.setStyleSheet(COMBO_BOX_STYLE)
         self.data_source_combo.setFont(QFont(self.font_family, 12))
         layout.addWidget(self.data_source_combo)
@@ -51,34 +50,53 @@ class Sidebar(QWidget):
         self.refresh_button.setStyleSheet(BUTTON_STYLE)
         layout.addWidget(self.refresh_button)
 
+        # Connect button
+        self.connect_button = QPushButton("Connect")
+        self.connect_button.setFont(QFont(self.font_family, 16))
+        self.connect_button.setStyleSheet(BUTTON_STYLE)
+        layout.addWidget(self.connect_button)
+        
         # Status button
         self.status_button = QPushButton("Status")
         self.status_button.setFont(QFont(self.font_family, 16))
         self.status_button.setStyleSheet(BUTTON_STYLE)
         layout.addWidget(self.status_button)
 
-        # Connect button
-        self.connect_button = QPushButton("Connect")
-        self.connect_button.setFont(QFont(self.font_family, 16))
-        self.connect_button.setStyleSheet(BUTTON_STYLE)
-        layout.addWidget(self.connect_button)
-
         layout.addStretch()
         
         # Connect data source change signal
         self.data_source_combo.currentTextChanged.connect(self.on_data_source_changed)
         
-        # Initially hide port dropdown for CSV
-        self.on_data_source_changed("CSV")
+        # Initially set state for "Select" option
+        self.on_data_source_changed("Select")
         
     def on_data_source_changed(self, source_name):
-        # Show/hide port dropdown based on data source
-        if source_name.lower() == "csv":
+        # Show/hide and enable/disable elements based on data source
+        source_lower = source_name.lower()
+        
+        if source_lower == "select":
+            # Hide port-related elements and disable buttons
             self.port_dropdown.hide()
             self.port_label.hide()
+            self.refresh_button.hide()
+            self.status_button.hide()
+            self.connect_button.hide()
+            
+        elif source_lower == "csv":
+            # Hide port-related elements for CSV, but enable buttons
+            self.port_dropdown.hide()
+            self.port_label.hide()
+            self.refresh_button.hide()
+            self.status_button.show()
+            self.connect_button.show()
+            
         else:
+            # Show port-related elements for Radio/Serial and enable buttons
             self.port_dropdown.show()
             self.port_label.show()
+            self.refresh_button.show()
+            self.status_button.show()
+            self.connect_button.show()
         
     def get_data_source_combo(self):
         return self.data_source_combo

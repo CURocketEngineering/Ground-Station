@@ -11,7 +11,6 @@ class StatusModel:
         
     def set_data_source(self, data_source: DataSource):
         # Set the data source for this model
-        print(f"🔗 Setting data source in model: {type(data_source).__name__}")
         self.data_source = data_source
         
     def parse_status_data(self, status_string: str) -> Dict[str, str]:
@@ -29,26 +28,23 @@ class StatusModel:
     
     def update_from_data_source(self) -> bool:
         # Update model from the configured data source
-        print("🔄 Model: Attempting to update from data source")
         
         if not self.data_source:
-            print("❌ Model: No data source set")
+            print("No data source set")
             return False
             
         if not self.data_source.is_connected():
-            print("❌ Model: Data source not connected")
+            print("Data source not connected")
             return False
             
         data = self.data_source.get_data()
-        print(f"📦 Model: Data source returned: {data}")
         
         if data:
             self.status_data = data
             self.last_update_time = time.time()
-            print(f"✅ Model: Successfully updated with {len(data)} fields")
             return True
         
-        print("❌ Model: Data source returned None or empty data")
+        print("Data source returned None or empty data")
         return False
     
     def update_status(self, status_data: Dict[str, str]):

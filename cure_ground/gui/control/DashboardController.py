@@ -253,7 +253,6 @@ class DashboardController:
             # Update view
             status_display = self.view.get_status_display()
             status_display.update_text(left_text, right_text)
-            print("Display updated")
         else:
             print("Failed to update from data source")
     
