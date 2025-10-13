@@ -226,7 +226,7 @@ class DashboardController:
             self.timer.stop()
             status_display.update_button.setText("Start Streaming")
         else:
-            self.timer.start(500)  # Update every 500ms
+            self.timer.start(20)  # Update every 20ms
             status_display.update_button.setText("Stop Streaming")
             
         self.streaming = not self.streaming

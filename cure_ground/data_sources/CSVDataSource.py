@@ -119,9 +119,12 @@ class CSVDataSource(DataSource):
         real_elapsed_time = (time.time() - self.playback_start_time) * 1000  # Convert to milliseconds
         
         # Only return data if real time has caught up to this data point's timestamp
-        if real_elapsed_time >= current_data_timestamp:
+        cleaned_data = {}
+        while real_elapsed_time >= current_data_timestamp:
             # Clean the data for display
-            cleaned_data = {}
+            current_row = self.processed_rows[self.current_index]
+            current_data_timestamp = current_row['normalized_timestamp']
+            
             for key, value in current_row.items():
                 if key in ['original_timestamp', 'normalized_timestamp']:
                     continue  # Skip internal fields
@@ -133,9 +136,7 @@ class CSVDataSource(DataSource):
             original_ts = current_row['original_timestamp']
             
             self.current_index += 1
-            return cleaned_data
-        
-        return None
+        return cleaned_data
     
     def is_connected(self) -> bool:
         return self.connected
