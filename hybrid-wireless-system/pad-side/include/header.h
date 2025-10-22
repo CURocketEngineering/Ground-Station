@@ -2,16 +2,20 @@
 #define HEADER_H
 
 
-readcommands();
+user_input();
+user_input_thread_start();
 process_command();
-openpurge();
-closepurge();
-quit_program();
-dump_nitrous();
-fire_cycle();
-close_fire_relay();
+enter_safe_mode();
+enter_armed_mode();
+close_purge_relay();
+open_purge_relay();
+close_fill_relay();
+open_fill_relay();
 open_fire_relay();
-
+close_fire_relay();
+fire_cycle();
+dump_nitrous();
+quit_program();
 
 #endif
 
