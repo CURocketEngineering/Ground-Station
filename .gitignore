@@ -166,3 +166,4 @@ cython_debug/
 *.csv#
 
 aa-test/
+**/.DS_Store
