@@ -253,8 +253,6 @@ class DashboardController:
             # Update view
             status_display = self.view.get_status_display()
             status_display.update_text(left_text, right_text)
-        else:
-            print("Failed to update from data source")
     
     def clear_plm(self):
         # Clear PLM - only works with serial-like sources

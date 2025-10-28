@@ -30,7 +30,6 @@ class CSVDataSource(DataSource):
             self.playback_start_time = 0
                 
             self.connected = True
-            print(f"Connected to CSV data source")
             
             if self.processed_rows:
                 first_ts = self.processed_rows[0]['original_timestamp']
@@ -91,14 +90,14 @@ class CSVDataSource(DataSource):
     
     def disconnect(self) -> None:
         # Disconnect from CSV data source
-        print("🔌 Disconnecting from CSV data source")
+        print("Disconnecting from CSV data source")
         self.connected = False
         self.data_rows = []
         self.processed_rows = []
         self.current_index = 0
         self.playback_start_time = 0
         self.data_start_timestamp = 0
-    
+        self.last_valid_values = {}  # Add this line to clear cache    
     def get_data(self) -> Optional[Dict[str, str]]:
         if not self.connected or not self.processed_rows:
             return None
@@ -107,6 +106,8 @@ class CSVDataSource(DataSource):
         if self.playback_start_time == 0:
             self.playback_start_time = time.time()
             self.current_index = 0
+            # Initialize cache for carrying forward values
+            self.last_valid_values = {}
         
         # If we've reached the end of the data
         if self.current_index >= len(self.processed_rows):
@@ -120,7 +121,9 @@ class CSVDataSource(DataSource):
         
         # Only return data if real time has caught up to this data point's timestamp
         cleaned_data = {}
-        while real_elapsed_time >= current_data_timestamp:
+        data_available = False
+        
+        while real_elapsed_time >= current_data_timestamp and self.current_index < len(self.processed_rows):
             # Clean the data for display
             current_row = self.processed_rows[self.current_index]
             current_data_timestamp = current_row['normalized_timestamp']
@@ -128,15 +131,29 @@ class CSVDataSource(DataSource):
             for key, value in current_row.items():
                 if key in ['original_timestamp', 'normalized_timestamp']:
                     continue  # Skip internal fields
-                if value is None or value == '':
-                    cleaned_data[key] = 'N/A'
+                
+                # If value exists and is not empty, use it and update cache
+                if value is not None and value != '':
+                    cleaned_value = str(value).strip()
+                    cleaned_data[key] = cleaned_value
+                    self.last_valid_values[key] = cleaned_value  # Update cache
+                # If value is missing but we have a cached value, use the cached value
+                elif key in self.last_valid_values:
+                    cleaned_data[key] = self.last_valid_values[key]
+                # Otherwise, use 'N/A'
                 else:
-                    cleaned_data[key] = str(value).strip()
+                    cleaned_data[key] = 'N/A'
             
             original_ts = current_row['original_timestamp']
-            
             self.current_index += 1
-        return cleaned_data
+            data_available = True
+            
+            # Break if we've processed all available rows for current time
+            if self.current_index >= len(self.processed_rows):
+                break
+            current_data_timestamp = self.processed_rows[self.current_index]['normalized_timestamp']
+        
+        return cleaned_data if data_available else None
     
     def is_connected(self) -> bool:
         return self.connected

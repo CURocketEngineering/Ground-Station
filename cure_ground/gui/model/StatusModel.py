@@ -44,7 +44,6 @@ class StatusModel:
             self.last_update_time = time.time()
             return True
         
-        print("Data source returned None or empty data")
         return False
     
     def update_status(self, status_data: Dict[str, str]):
