@@ -16,19 +16,11 @@ data_names:
     unit: "°/s"
     data:
       - name: GYROSCOPE_X
-        id: 0
+        id: 3
       - name: GYROSCOPE_Y
-        id: 1
+        id: 4
       - name: GYROSCOPE_Z
-        id: 2
-  - type: single
-    name: ALTITUDE
-    id: 8
-    unit: "m"
-  - type: single
-    name: EST_ALTITUDE
-    id: 19
-    unit: "m"
+        id: 5
   - type: single
     name: TEMPERATURE
     id: 6
@@ -37,6 +29,10 @@ data_names:
     name: PRESSURE
     id: 7
     unit: "hPa"
+  - type: single
+    name: ALTITUDE
+    id: 8
+    unit: "m"
   - type: group
     name: MAGNETOMETER
     id: 111
@@ -49,18 +45,46 @@ data_names:
       - name: MAGNETOMETER_Z
         id: 11
   - type: single
+    name: MEDIAN_ACCELERATION_SQUARED
+    id: 12
+    unit: "m²/s²"
+  - type: single
     name: CYCLE_RATE
     id: 13
     unit: "Hz"
+  - type: single
+    name: TIMESTAMP
+    id: 14
+    unit: "s"
   - type: single
     name: STATE_CHANGE
     id: 15
     unit: "enum"
   - type: single
+    name: FLIGHT_ID
+    id: 16
+    unit: "id"
+  - type: single
+    name: EST_APOGEE
+    id: 17
+    unit: "m"
+  - type: single
+    name: EST_VERTICAL_VELOCITY
+    id: 18
+    unit: "m/s"
+  - type: single
+    name: EST_ALTITUDE
+    id: 19
+    unit: "m"
+  - type: single
     name: BATT
     id: 20
     unit: "V"
   - type: single
-    name: FLIGHT_ID
-    id: 16
-    unit: "id"
+    name: FIN_DEPLOYMENT_AMOUNT
+    id: 21
+    unit: "°"
+  - type: single
+    name: TIME_TO_APOGEE
+    id: 22
+    unit: "s"
