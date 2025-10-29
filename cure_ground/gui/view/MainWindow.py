@@ -6,8 +6,6 @@ from view.Sidebar import Sidebar
 from view.StatusDisplay import StatusDisplay
 
 class MainWindow(QMainWindow):
-    # Defining image paths
-
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Sensor Dashboard")
@@ -26,6 +24,9 @@ class MainWindow(QMainWindow):
         # Create UI components
         self.sidebar = Sidebar(self, self.font_family)
         self.status_display = StatusDisplay(self, self.font_family)
+        
+        # Graph will be created by controller and overlaid
+        self.altitude_graph = None
         
     def load_custom_font(self, font_path):
         font_id = QFontDatabase.addApplicationFont(font_path)
@@ -56,3 +57,22 @@ class MainWindow(QMainWindow):
         
     def get_status_display(self):
         return self.status_display
+        
+    def set_altitude_graph(self, graph_widget):
+        # Set the altitude graph overlay
+        self.altitude_graph = graph_widget
+        if self.altitude_graph:
+            # Position the graph as an overlay
+            self.altitude_graph.setParent(self)
+            self.altitude_graph.move(375, 50)   # Position
+            self.altitude_graph.resize(1100, 775)   # Size
+            
+            self.altitude_graph.raise_()
+            self.altitude_graph.setAttribute(Qt.WidgetAttribute.WA_AlwaysStackOnTop, True)
+            
+    def toggle_graph_visibility(self, visible):
+        # Show or hide the graph overlay
+        if self.altitude_graph:
+            self.altitude_graph.setVisible(visible)
+            if visible:
+                self.altitude_graph.raise_()
