@@ -11,7 +11,7 @@ data_names:
       - name: ACCELEROMETER_Z
         id: 2
   - type: group
-    name: ACCELEROMETGYROSCOPE_XER
+    name: GYROSCOPE
     id: 105
     unit: "°/s"
     data:
@@ -30,7 +30,7 @@ data_names:
     id: 19
     unit: "m"
   - type: single
-    name: TEMP
+    name: TEMPERATURE
     id: 6
     unit: "°C"
   - type: single
