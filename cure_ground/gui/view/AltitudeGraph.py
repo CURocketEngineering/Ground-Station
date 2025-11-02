@@ -1,10 +1,11 @@
 import pyqtgraph as pg
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame
-from PyQt6.QtCore import QTimer
+from PyQt6.QtCore import QTimer, Qt
 from PyQt6.QtGui import QFont
 import numpy as np
+import time
 
-class AltitudeGraph(QFrame):  # Changed to QFrame for better styling
+class AltitudeGraph(QFrame):
     def __init__(self, status_model, font_family="Arial", parent=None):
         super().__init__(parent)
         self.status_model = status_model
@@ -20,12 +21,15 @@ class AltitudeGraph(QFrame):  # Changed to QFrame for better styling
             }
         """)
         
+        # Ensure this widget stays on top
+        self.setAttribute(Qt.WidgetAttribute.WA_AlwaysStackOnTop, True)
+        
         self.setup_ui()
         self.setup_graph()
         self.setup_timer()
         
     def setup_ui(self):
-        # Setup the main layout
+        """Setup the main layout"""
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(10, 10, 10, 10)
         main_layout.setSpacing(5)
@@ -40,6 +44,12 @@ class AltitudeGraph(QFrame):  # Changed to QFrame for better styling
         header_layout.addWidget(title_label)
         
         header_layout.addStretch()
+        
+        # Update frequency indicator
+        self.update_freq_label = QLabel("0 Hz")
+        self.update_freq_label.setFont(QFont(self.font_family, 9))
+        self.update_freq_label.setStyleSheet("color: #CCCCCC;")
+        header_layout.addWidget(self.update_freq_label)
         
         # Minimize button
         self.minimize_btn = QPushButton("−")
@@ -132,37 +142,45 @@ class AltitudeGraph(QFrame):  # Changed to QFrame for better styling
         
         # Graph widget
         self.graph_widget = pg.PlotWidget()
-        self.graph_widget.setBackground('k')  # Black background
-        self.graph_widget.setMinimumHeight(300)  # Minimum height
+        self.graph_widget.setBackground('k')
+        self.graph_widget.setMinimumHeight(450)
         main_layout.addWidget(self.graph_widget)
         
     def setup_graph(self):
-        # Setup the pyqtgraph plot
-        # Configure the plot
-        self.graph_widget.setLabel('left', 'Altitude', 'm')
-        self.graph_widget.setLabel('bottom', 'Time', 's')
+        """Setup the pyqtgraph plot"""
+        # Configure the plot for better performance
+        self.graph_widget.setLabel('left', 'Altitude (m)')
+        self.graph_widget.setLabel('bottom', 'Time (s)')
         self.graph_widget.showGrid(x=True, y=True, alpha=0.3)
-        self.graph_widget.setTitle("", color='w', size='10pt')  # Empty title since we have our own header
+        
+        # Disable auto SI prefix scaling on axes (prevents k, M prefixes)
+        self.graph_widget.getAxis('left').enableAutoSIPrefix(False)
+        self.graph_widget.getAxis('bottom').enableAutoSIPrefix(False)
         
         # Set plot colors
         self.graph_widget.getAxis('left').setPen('w')
         self.graph_widget.getAxis('bottom').setPen('w')
         
-        # Initialize plot curve
-        self.curve = self.graph_widget.plot(pen=pg.mkPen(color='#00FF00', width=2))
+        # Initialize plot curve with anti-aliasing disabled for performance
+        self.curve = self.graph_widget.plot(pen=pg.mkPen(color='#00FF00', width=2), antialias=False)
         
         # Initial plot data
         self.x_data = np.array([])
         self.y_data = np.array([])
         
+        # Performance tracking
+        self.update_count = 0
+        self.last_update_time = time.time()
+        self.last_data_length = 0
+        
     def setup_timer(self):
-        # Setup update timer
+        """Setup update timer - FAST real-time updates"""
         self.update_timer = QTimer()
         self.update_timer.timeout.connect(self.update_plot)
-        self.update_timer.start(100)  # Update every 100ms
+        self.update_timer.start(16)  # ~60 FPS for smooth real-time feel
         
     def update_plot(self):
-        # Update the plot with new data
+        """Update the plot with new data"""
         if self.is_paused or self.is_minimized:
             return
             
@@ -174,17 +192,39 @@ class AltitudeGraph(QFrame):  # Changed to QFrame for better styling
             self.x_data = np.array(timestamps)
             self.y_data = np.array(altitudes)
             
-            # Update plot
-            self.curve.setData(self.x_data, self.y_data)
-            
-            # Auto-scale axes
-            if len(self.x_data) > 1:
-                x_range = self.x_data[-1] - self.x_data[0]
-                self.graph_widget.setXRange(max(0, self.x_data[-1] - x_range), self.x_data[-1])
+            # Only update plot if we have new data
+            current_length = len(self.x_data)
+            if current_length != self.last_data_length:
+                # Update plot
+                self.curve.setData(self.x_data, self.y_data)
+                self.last_data_length = current_length
                 
-                y_min, y_max = min(self.y_data), max(self.y_data)
-                y_padding = (y_max - y_min) * 0.1 if y_max != y_min else 50
-                self.graph_widget.setYRange(y_min - y_padding, y_max + y_padding)
+                # Auto-scale axes for real-time feel
+                if len(self.x_data) > 1:
+                    # For short flights (< 60s), show all data
+                    # For longer flights, show scrolling 60s window
+                    total_duration = self.x_data[-1] - self.x_data[0]
+                    
+                    if total_duration <= 60.0:
+                        # Show all data for short flights
+                        x_min = self.x_data[0]
+                        x_max = self.x_data[-1]
+                    else:
+                        # Scrolling window for longer flights
+                        window_size = 60.0  # seconds
+                        x_max = self.x_data[-1]
+                        x_min = max(self.x_data[0], x_max - window_size)
+                    
+                    # Set X range
+                    self.graph_widget.setXRange(x_min, x_max, padding=0.02)
+                    
+                    # Set Y range based on visible data
+                    visible_indices = (self.x_data >= x_min) & (self.x_data <= x_max)
+                    if np.any(visible_indices):
+                        visible_y = self.y_data[visible_indices]
+                        y_min, y_max = np.min(visible_y), np.max(visible_y)
+                        y_padding = (y_max - y_min) * 0.15 if y_max != y_min else 50
+                        self.graph_widget.setYRange(y_min - y_padding, y_max + y_padding, padding=0)
             
             # Update statistics
             stats = self.status_model.get_graph_stats()
@@ -193,14 +233,23 @@ class AltitudeGraph(QFrame):  # Changed to QFrame for better styling
                     label.setText(f"{stats[stat_id]:.1f}m")
                 else:
                     label.setText("N/A")
+            
+            # Update frequency display
+            self.update_count += 1
+            current_time = time.time()
+            if current_time - self.last_update_time >= 1.0:
+                freq = self.update_count / (current_time - self.last_update_time)
+                self.update_freq_label.setText(f"{freq:.1f} Hz")
+                self.update_count = 0
+                self.last_update_time = current_time
     
     def toggle_pause(self):
-        # Toggle pause state
+        """Toggle pause state"""
         self.is_paused = not self.is_paused
         self.pause_btn.setText("Resume" if self.is_paused else "Pause")
         
     def toggle_minimize(self):
-        # Toggle minimize state
+        """Toggle minimize state"""
         self.is_minimized = not self.is_minimized
         self.minimize_btn.setText("+" if self.is_minimized else "−")
         self.stats_frame.setVisible(not self.is_minimized)
@@ -210,14 +259,15 @@ class AltitudeGraph(QFrame):  # Changed to QFrame for better styling
         if self.is_minimized:
             self.setFixedHeight(40)
         else:
-            self.setFixedHeight(400)  # Restore to original height
+            self.setFixedHeight(550)
         
     def clear_graph(self):
-        # Clear the graph data
+        """Clear the graph data"""
         self.status_model.clear_graph_data()
         self.x_data = np.array([])
         self.y_data = np.array([])
         self.curve.setData(self.x_data, self.y_data)
+        self.last_data_length = 0
         
         # Reset stats
         for label in self.stats_labels.values():

@@ -1,7 +1,7 @@
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QMessageBox, QLabel
 
-from data_sources import DataSourceFactory
+from data_sources.DataSourceFactory import DataSourceFactory
 from model.StatusModel import StatusModel
 from view.TextFormatter import TextFormatter
 from view.TextFormatterCSV import TextFormatterCSV
@@ -85,7 +85,7 @@ class DashboardController:
     def toggle_streaming(self):
         if not self.connected:
             QMessageBox.information(self.view, "Not Connected", 
-                                  "Please connect to a data source first.")
+                                "Please connect to a data source first.")
             return
             
         sidebar = self.view.get_sidebar()
@@ -94,7 +94,7 @@ class DashboardController:
             self.timer.stop()
             sidebar.get_live_update_button().setText("Start Streaming")
         else:
-            self.timer.start(20)
+            self.timer.start(10)
             sidebar.get_live_update_button().setText("Stop Streaming")
             
         self.streaming = not self.streaming
