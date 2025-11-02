@@ -3,8 +3,8 @@ import time
 import pandas as pd
 import os
 from typing import Dict, Optional, List
-from .DataSource import DataSource
-from .LaunchDetector import LaunchDetector
+from cure_ground.data_sources.DataSource import DataSource
+from cure_ground.data_sources.LaunchDetector import LaunchDetector
 
 class CSVDataSource(DataSource):
     def __init__(self, csv_file_path: str):
@@ -31,7 +31,6 @@ class CSVDataSource(DataSource):
             name_without_ext = os.path.splitext(original_name)[0]
             self.trimmed_csv_path = os.path.join(temp_dir, f"{name_without_ext}_trimmed.csv")
             
-            print("Analyzing CSV for launch event...")
             success = detector.create_trimmed_csv(self.csv_file_path, self.trimmed_csv_path)
             
             if success and os.path.exists(self.trimmed_csv_path):
@@ -61,7 +60,6 @@ class CSVDataSource(DataSource):
                 first_ts = self.processed_rows[0]['original_timestamp']
                 last_ts = self.processed_rows[-1]['original_timestamp']
                 total_duration = (last_ts - first_ts) / 1000.0
-                print(f"Connected to CSV data source - {len(self.processed_rows)} data points, duration: {total_duration:.1f}s")
             
             return True
             
@@ -74,7 +72,7 @@ class CSVDataSource(DataSource):
     
     def disconnect(self) -> None:
         # Disconnect from CSV data source
-        print("🔌 Disconnecting from CSV data source")
+        print("Disconnecting from CSV data source")
         self.connected = False
         self.data_rows = []
         self.processed_rows = []

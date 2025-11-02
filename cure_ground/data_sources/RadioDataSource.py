@@ -1,187 +1,306 @@
-import time
-import struct
-from typing import Dict, Optional
-from .SerialDataSource import SerialDataSource
+"""
+Radio Data Source for CURE Ground Station
+Parses radio telemetry data and provides it in a format compatible with StatusModel.
 
-class RadioDataSource(SerialDataSource):
-    def __init__(self, baudrate=57600):
-        super().__init__(baudrate=baudrate)
-        self.buffer = bytearray()
-        
-        # Data packet definitions from PDF
-        self.PACKET_START = {
-            0x52: self._parse_2hz_packet,  # 2Hz data
-            0x51: self._parse_1hz_packet   # 1Hz data
-        }
-        
-        # Data type mappings
-        self.DATA_TYPES = {
-            102: 'ACCL',  # Accelerometer
-            105: 'GYRO',  # Gyroscope
-            8: 'ALT',     # Altitude
-            19: 'EST_ALTITUDE',  # Estimated altitude
-            6: 'TEMP',    # Temperature
-            7: 'PRESSURE', # Pressure
-            111: 'MAG',   # Magnetometer
-            13: 'CYCLE_RATE', # Cycle rate
-            15: 'STATE',  # State
-            20: 'BATT',   # Battery
-            16: 'FLIGHT_ID' # Flight ID
-        }
-        
-        # State mappings
-        self.STATES = {
-            0: 'UNARMED',
-            1: 'ARMED', 
-            2: 'ASCENT',
-            3: 'POWERED_ASCENT',
-            4: 'COAST_ASCENT',
-            5: 'DESCENT',
-            6: 'DROGUE_DEPLOYED',
-            7: 'MAIN_DEPLOYED',
-            8: 'LANDED'
-        }
+Location: cure_ground/data_sources/radio_data_source.py
+"""
+import struct
+import time
+from typing import Dict, List, Optional
+import serial
+
+from cure_ground.core.protocols.data_names.data_name_loader import load_data_name_enum, DataNames
+from cure_ground.core.protocols.states.states_loader import load_states, States
+from cure_ground.data_sources import DataSource
+
+
+class RadioDataSource(DataSource):
+    """Handles radio telemetry data reception and parsing."""
     
-    def connect(self, port: str = None) -> bool:
-        # Connect to radio via serial port
-        if port is None:
-            ports = self.get_available_ports()
-            for port in ports:
-                if port != "No Ports Available":
-                    if super().connect(port):
-                        self.buffer = bytearray()
-                        print(f"Connected to radio on {port}")
-                        return True
+    START_SEQUENCE = [b"\x00", b"\x00", b"\x00", b"\x33"]
+    END_SEQUENCE = [b"\x00", b"\x00", b"\x00", b"\x34"]
+    
+    def __init__(self, 
+                 port: str, 
+                 baudrate: int = 57600, 
+                 timeout: int = 1,
+                 protocol_version: int = 3,
+                 states_version: int = 1):
+        """
+        Initialize the radio data source.
+        
+        Args:
+            port: Serial port to connect to (e.g., "COM7" or "/dev/ttyUSB0")
+            baudrate: Communication baud rate
+            timeout: Serial read timeout in seconds
+            protocol_version: Data names YAML version to load
+            states_version: States YAML version to load
+        """
+        self.port = port
+        self.baudrate = baudrate
+        self.timeout = timeout
+        self.ser: Optional[serial.Serial] = None
+        self._connected = False
+        
+        # Load protocol definitions
+        self.data_names: DataNames = load_data_name_enum(protocol_version)
+        self.states: States = load_states(states_version)
+        
+        # Identify group IDs (multi-value packets) from data_names
+        self.group_ids = set()
+        self.group_component_mapping = {}  # Maps group ID to component IDs
+        
+        for item in self.data_names.data_definitions:
+            if item.get("type") == "group":
+                group_id = item["id"]
+                self.group_ids.add(group_id)
+                # Store the component IDs for this group
+                if "data" in item:
+                    self.group_component_mapping[group_id] = item["data"]
+        
+        # Store latest packet data for get_data()
+        self.latest_data: Dict[str, str] = {}
+        self.last_packet_time = 0
+        
+    def connect(self) -> bool:
+        """
+        Establish serial connection.
+        
+        Returns:
+            True if connection successful, False otherwise
+        """
+        try:
+            self.ser = serial.Serial(self.port, self.baudrate, timeout=self.timeout)
+            self.ser.flush()
+            self._connected = True
+            print(f"RadioDataSource: Connected to {self.port} at {self.baudrate} baud")
+            return True
+        except serial.SerialException as e:
+            print(f"RadioDataSource: Failed to connect to {self.port}: {e}")
+            self._connected = False
             return False
-        else:
-            result = super().connect(port)
-            if result:
-                self.buffer = bytearray()
-            return result
     
-    def disconnect(self) -> None:
-        # Disconnect from radio
-        super().disconnect()
-        self.buffer = bytearray()
+    def disconnect(self):
+        """Close serial connection."""
+        if self.ser and self.ser.is_open:
+            self.ser.close()
+        self._connected = False
+        print("RadioDataSource: Disconnected from serial port")
+    
+    def is_connected(self) -> bool:
+        """Check if data source is connected."""
+        return self._connected and self.ser is not None and self.ser.is_open
     
     def get_data(self) -> Optional[Dict[str, str]]:
-        # Get the next data packet from radio
+        """
+        Get latest data in StatusModel-compatible format.
+        
+        Returns:
+            Dictionary mapping data names to string values, or None if no data
+        """
         if not self.is_connected():
             return None
-            
-        # Read available data
-        if self.ser and self.ser.in_waiting:
-            new_data = self.ser.read(self.ser.in_waiting)
-            self.buffer.extend(new_data)
-            
-            # Process complete packets from buffer
-            return self._process_buffer()
-        return None
-    
-    def _process_buffer(self) -> Optional[Dict[str, str]]:
-        # Process buffer to find complete packets
-        data_dict = {}
         
-        while len(self.buffer) >= 2:  # Need at least start byte + some data
-            start_byte = self.buffer[0]
+        # Try to read a new packet
+        packet = self._read_packet()
+        if packet:
+            self._update_latest_data(packet)
+        
+        # Return the latest data we have (even if packet read failed)
+        return self.latest_data if self.latest_data else None
+    
+    def _update_latest_data(self, packet: Dict):
+        """
+        Convert raw packet data to StatusModel format.
+        Updates self.latest_data with new values.
+        
+        Args:
+            packet: Raw packet from _read_packet()
+        """
+        # Update timestamp (convert from ms to seconds)
+        timestamp_sec = packet['timestamp'] / 1000.0
+        self.latest_data['TIMESTAMP'] = f"{timestamp_sec:.3f}"
+        self.last_packet_time = time.time()
+        
+        # Process each data entry in the packet
+        for entry in packet['data']:
+            data_id = entry['id']
             
-            if start_byte in self.PACKET_START:
-                # Try to parse packet
-                parser = self.PACKET_START[start_byte]
-                result = parser(self.buffer)
+            try:
+                info = self.data_names.get_info_by_id(data_id)
+                name = info['name']
                 
-                if result:
-                    data_dict.update(result['data'])
-                    # Remove processed bytes from buffer
-                    self.buffer = self.buffer[result['bytes_processed']:]
+                if data_id in self.group_ids:
+                    # Group type - unpack into individual components
+                    component_ids = self.group_component_mapping.get(data_id, [])
+                    values = entry['values']
                     
-                    # Return the collected data
-                    if data_dict:
-                        return data_dict
+                    for i, (comp_id, value) in enumerate(zip(component_ids, values)):
+                        try:
+                            comp_info = self.data_names.get_info_by_id(comp_id)
+                            comp_name = comp_info['name']
+                            self.latest_data[comp_name] = f"{value:.4f}"
+                        except (KeyError, IndexError):
+                            pass
                 else:
-                    # Incomplete packet, wait for more data
-                    break
-            else:
-                # Invalid start byte, skip it
-                self.buffer.pop(0)
-        
-        return None if not data_dict else data_dict
-    
-    def _parse_2hz_packet(self, buffer: bytearray) -> Optional[Dict]:
-        # Parse 2Hz data packet (start byte 0x52)
-        # Minimum packet: start(1) + timestamp(4) + at least one data group
-        if len(buffer) < 6:
-            return None
+                   
+                    self.latest_data[name] = f"{entry['float_value']:.4f}"
             
-        data = {}
-        bytes_processed = 1  # Start byte
+            except KeyError:
+                # Unknown ID - skip it
+                pass
+    
+    def _read_until_start_sequence(self) -> bool:
+        """
+        Read bytes until start sequence is found.
+        
+        Returns:
+            True if start sequence found, False on timeout
+        """
+        buffer = []
+        while True:
+            byte = self.ser.read(1)
+            if not byte:  # Timeout
+                return False
+            buffer.append(byte)
+            if len(buffer) >= 4 and buffer[-4:] == self.START_SEQUENCE:
+                return True
+    
+    def _read_timestamp(self) -> int:
+        """
+        Read and parse 4-byte timestamp.
+        
+        Returns:
+            Timestamp value in milliseconds
+        """
+        timestamp_bytes = self.ser.read(4)
+        if len(timestamp_bytes) != 4:
+            raise IOError("Failed to read timestamp")
+        return struct.unpack(">I", timestamp_bytes)[0]
+    
+    def _parse_data_entry(self, data_id: int, data_bytes: bytes) -> Dict:
+        """
+        Parse a single data entry.
+        
+        Args:
+            data_id: The sensor/data ID
+            data_bytes: Raw data bytes
+            
+        Returns:
+            Dictionary with parsed data
+        """
+        result = {'id': data_id}
+        
+        if data_id in self.group_ids:
+            # Group type: 12 bytes = 3 floats (little-endian)
+            float_values = []
+            for i in range(3):
+                byte_data = bytes([
+                    data_bytes[i*4+3], 
+                    data_bytes[i*4+2], 
+                    data_bytes[i*4+1], 
+                    data_bytes[i*4]
+                ])
+                float_value = struct.unpack('<f', byte_data)[0]
+                float_values.append(float_value)
+            result['values'] = float_values
+        else:
+            # Single value: 4 bytes (big-endian)
+            float_value = struct.unpack('>f', data_bytes)[0]
+            result['float_value'] = float_value
+        
+        return result
+    
+    def _read_packet_data(self) -> List[Dict]:
+        """
+        Read all data entries in a packet until end sequence.
+        
+        Returns:
+            List of parsed data dictionaries
+        """
+        packet_data = []
+        
+        while True:
+            # Read ID byte
+            buffer = []
+            id_byte = self.ser.read(1)
+            if not id_byte:
+                break
+            
+            buffer.append(id_byte)
+            data_id = struct.unpack("B", id_byte)[0]
+            
+            # Read first 3 bytes of data
+            data_bytes = bytes()
+            for _ in range(3):
+                next_byte = self.ser.read(1)
+                if not next_byte:
+                    return packet_data
+                data_bytes += next_byte
+                buffer.append(next_byte)
+            
+            # Check if we hit end sequence
+            if buffer == self.END_SEQUENCE:
+                break
+            
+            # Determine expected data length based on whether ID is a group
+            expected_length = 12 if data_id in self.group_ids else 4
+            
+            # Read remaining data bytes
+            while len(data_bytes) < expected_length:
+                data_byte = self.ser.read(1)
+                if not data_byte:
+                    return packet_data
+                data_bytes += data_byte
+            
+            # Parse and store the data
+            try:
+                parsed_data = self._parse_data_entry(data_id, data_bytes)
+                packet_data.append(parsed_data)
+            except Exception as e:
+                print(f"RadioDataSource: Error parsing data ID {data_id}: {e}")
+                continue
+        
+        return packet_data
+    
+    def _read_packet(self) -> Optional[Dict]:
+        """
+        Read a complete radio packet.
+        
+        Returns:
+            Dictionary containing timestamp and parsed data, or None if no packet
+        """
+        if not self.is_connected():
+            return None
         
         try:
-            # Parse timestamp (4 bytes, int32)
-            if len(buffer) < bytes_processed + 4:
+            # Find start sequence
+            if not self._read_until_start_sequence():
                 return None
-                
-            timestamp = struct.unpack('<i', buffer[bytes_processed:bytes_processed+4])[0]
-            data['TIMESTAMP'] = str(timestamp)
-            bytes_processed += 4
             
-            # Parse data groups until end of buffer
-            while bytes_processed < len(buffer):
-                data_type = buffer[bytes_processed]
-                bytes_processed += 1
-                
-                if data_type in [102, 105, 111]:  # ACCL, GYRO, MAG - 3 floats
-                    if len(buffer) < bytes_processed + 12:
-                        return None
-                    
-                    x, y, z = struct.unpack('<fff', buffer[bytes_processed:bytes_processed+12])
-                    prefix = self.DATA_TYPES.get(data_type, f'UNKNOWN_{data_type}')
-                    data[f'{prefix}_X'] = f"{x:.2f}"
-                    data[f'{prefix}_Y'] = f"{y:.2f}" 
-                    data[f'{prefix}_Z'] = f"{z:.2f}"
-                    bytes_processed += 12
-                    
-                elif data_type in [8, 19]:  # ALT, EST_ALTITUDE - 2 bytes int16
-                    if len(buffer) < bytes_processed + 2:
-                        return None
-                    
-                    alt = struct.unpack('<h', buffer[bytes_processed:bytes_processed+2])[0]
-                    prefix = self.DATA_TYPES.get(data_type, f'UNKNOWN_{data_type}')
-                    data[prefix] = str(alt)
-                    bytes_processed += 2
-                    
-                elif data_type in [6, 7, 13, 15, 16]:  # TEMP, PRESSURE, CYCLE_RATE, STATE, FLIGHT_ID - 1 byte int
-                    if len(buffer) < bytes_processed + 1:
-                        return None
-                    
-                    value = buffer[bytes_processed]
-                    prefix = self.DATA_TYPES.get(data_type, f'UNKNOWN_{data_type}')
-                    
-                    if data_type == 15:  # STATE - convert to state name
-                        data[prefix] = self.STATES.get(value, f'UNKNOWN_STATE_{value}')
-                    else:
-                        data[prefix] = str(value)
-                    bytes_processed += 1
-                    
-                elif data_type == 20:  # BATT - 1 byte float8
-                    if len(buffer) < bytes_processed + 1:
-                        return None
-                    
-                    voltage = buffer[bytes_processed] / 10.0  # Assuming 0.1V resolution
-                    data['BATT'] = f"{voltage:.1f}"
-                    bytes_processed += 1
-                    
-                else:
-                    # Unknown data type, stop parsing this packet
-                    break
+            # Read timestamp
+            timestamp = self._read_timestamp()
             
-            return {'data': data, 'bytes_processed': bytes_processed}
+            # Read all data in packet
+            packet_data = self._read_packet_data()
             
-        except (struct.error, IndexError):
+            return {
+                'timestamp': timestamp,
+                'data': packet_data,
+                'receive_time': time.time()
+            }
+        
+        except Exception as e:
+            print(f"RadioDataSource: Error reading packet: {e}")
             return None
     
-    def _parse_1hz_packet(self, buffer: bytearray) -> Optional[Dict]:
-        # Parse 1Hz data packet (start byte 0x51)
-        # This follows similar structure to 2Hz but different data frequency
-        # For now, use the same parser since data format is the same
-        return self._parse_2hz_packet(buffer)
+    def get_available_ports(self) -> List[str]:
+        """
+        Get list of available serial ports.
+        
+        Returns:
+            List of port names
+        """
+        import serial.tools.list_ports
+        ports = serial.tools.list_ports.comports()
+        return [port.device for port in ports]

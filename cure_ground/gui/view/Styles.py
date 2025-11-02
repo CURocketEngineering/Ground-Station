@@ -36,5 +36,5 @@ COMBO_BOX_STYLE = """
 
 SIDEBAR_STYLE = "background-color: rgba(10, 10, 10, 150); border-radius: 10px;"
 
-def get_text_style(color: str = "#C5FFBF") -> str:
+def get_text_style(color: str = "#00FF00") -> str:
     return f"color: {color}; background-color: transparent; padding: 10px;"

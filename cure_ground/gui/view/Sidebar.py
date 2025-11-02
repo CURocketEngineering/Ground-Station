@@ -2,7 +2,7 @@ from PyQt6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QComboBox, QLabel
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt
 
-from view.Styles import BUTTON_STYLE, COMBO_BOX_STYLE, SIDEBAR_STYLE
+from cure_ground.gui.view.Styles import BUTTON_STYLE, COMBO_BOX_STYLE, SIDEBAR_STYLE
 
 class Sidebar(QWidget):
     def __init__(self, parent=None, font_family="Arial"):

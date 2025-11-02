@@ -2,8 +2,8 @@ from PyQt6.QtWidgets import QMainWindow, QLabel, QApplication
 from PyQt6.QtGui import QFontDatabase, QPalette, QBrush, QPixmap
 from PyQt6.QtCore import Qt
 
-from view.Sidebar import Sidebar
-from view.StatusDisplay import StatusDisplay
+from cure_ground.gui.view.Sidebar import Sidebar
+from cure_ground.gui.view.StatusDisplay import StatusDisplay
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -16,10 +16,10 @@ class MainWindow(QMainWindow):
         self.setFixedSize(int(1920 / scale_factor), int(1080 / scale_factor))
 
         # Load and set background image
-        self.set_background_image("resources/Dashboard.png")
+        self.set_background_image("cure_ground/gui/resources/Dashboard.png")
         
         # Load custom font
-        self.font_family = self.load_custom_font("resources/NbpInformaFivesix-2dXW.ttf")
+        self.font_family = self.load_custom_font("cure_ground/gui/resources/NbpInformaFivesix-2dXW.ttf")
         
         # Create UI components
         self.sidebar = Sidebar(self, self.font_family)
@@ -64,8 +64,8 @@ class MainWindow(QMainWindow):
         if self.altitude_graph:
             # Position the graph as an overlay
             self.altitude_graph.setParent(self)
-            self.altitude_graph.move(375, 50)   # Position
-            self.altitude_graph.resize(1100, 775)   # Size
+            self.altitude_graph.move(850, 400)   # Position
+            self.altitude_graph.resize(625, 410)# Size
             
             self.altitude_graph.raise_()
             self.altitude_graph.setAttribute(Qt.WidgetAttribute.WA_AlwaysStackOnTop, True)

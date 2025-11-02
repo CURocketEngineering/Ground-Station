@@ -16,6 +16,7 @@ setup(
         "questionary",
         "plotly",
         "pyyaml",
+        "pyqtgraph",
     ],
     entry_points={
         "console_scripts": [
@@ -25,7 +26,7 @@ setup(
     author="Clemson University Rocket Engineering",
     author_email="",
     description="CURE Ground Station Software",
-    long_description=open("README.md").read(),
+    long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/CURocketEngineering/Ground-Station",
     classifiers=[

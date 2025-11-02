@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import QLabel
 from PyQt6.QtGui import QFont
 
-from view.Styles import get_text_style
+from cure_ground.gui.view.Styles import get_text_style
 
 class StatusDisplay:
     def __init__(self, parent, font_family):
@@ -20,7 +20,7 @@ class StatusDisplay:
     def create_text_label(self, text, x, y):
         label = QLabel(self.parent)
         label.setText(text)
-        label.setFont(QFont(self.font_family, 25))
+        label.setFont(QFont(self.font_family, 20))
         label.setStyleSheet(get_text_style())
         label.setWordWrap(True)
         label.move(x, y)
