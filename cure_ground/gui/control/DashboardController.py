@@ -1,10 +1,11 @@
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QMessageBox, QLabel
 
-from data_sources import DataSourceFactory
+from data_sources.DataSourceFactory import DataSourceFactory
 from model.StatusModel import StatusModel
 from view.TextFormatter import TextFormatter
 from view.TextFormatterCSV import TextFormatterCSV
+from view.AltitudeGraph import AltitudeGraph
 
 class DashboardController:
     def __init__(self, view):
@@ -16,6 +17,8 @@ class DashboardController:
         self.timer = QTimer()
         self.current_data_source = None
         self.connected = False
+        self.altitude_graph = None
+        self.graph_visible = False
         
         # Configuration
         self.csv_file_path = "resources/OldData.csv"
@@ -33,43 +36,95 @@ class DashboardController:
         # Connect port refresh
         sidebar.get_refresh_button().clicked.connect(self.refresh_ports)
         
-        # Connect status button
-        sidebar.get_status_button().clicked.connect(self.show_status)
+        # Connect connect/status button (merged functionality)
+        sidebar.get_connect_button().clicked.connect(self.toggle_connection_status)
         
-        # Connect connect/disconnect button
-        sidebar.get_connect_button().clicked.connect(self.toggle_connection)
-        
-        # Connect status display signals
-        status_display = self.view.get_status_display()
-        status_display.update_button.clicked.connect(self.toggle_streaming)
-        status_display.clear_button.clicked.connect(self.clear_plm)
+        # Connect control buttons in sidebar
+        sidebar.get_live_update_button().clicked.connect(self.toggle_streaming)
+        sidebar.get_graph_button().clicked.connect(self.toggle_graph)
+        sidebar.get_clear_plm_button().clicked.connect(self.clear_plm)
         
         # Connect timer
         self.timer.timeout.connect(self.update_status)
         
+    def toggle_connection_status(self):
+        # Handle both connection and status display in one button
+        if not self.connected:
+            # Connect and show status
+            self.connect_and_show_status()
+        else:
+            # Disconnect and hide status
+            self.disconnect_and_hide()
+            
+    def connect_and_show_status(self):
+        # Connect to data source and immediately show status
+        if self.connect():  # Your existing connect method
+            # Show status display after successful connection
+            status_display = self.view.get_status_display()
+            status_display.show_text()
+            self.update_status()  # Get initial data
+            
+            # Show control buttons in sidebar
+            sidebar = self.view.get_sidebar()
+            sidebar.show_control_buttons()
+            
+            # Update button text to show it can disconnect
+            sidebar.update_connect_button_text("Disconnect")
+            
+    def disconnect_and_hide(self):
+        # Disconnect and hide status display
+        self.disconnect()  # Your existing disconnect method
+        
+        # Hide control buttons in sidebar
+        sidebar = self.view.get_sidebar()
+        sidebar.hide_control_buttons()
+        
+        # Update button text back to connect
+        sidebar.update_connect_button_text("Connect")
+    
+    def toggle_streaming(self):
+        if not self.connected:
+            QMessageBox.information(self.view, "Not Connected", 
+                                "Please connect to a data source first.")
+            return
+            
+        sidebar = self.view.get_sidebar()
+        
+        if self.streaming:
+            self.timer.stop()
+            sidebar.get_live_update_button().setText("Start Streaming")
+        else:
+            self.timer.start(10)
+            sidebar.get_live_update_button().setText("Stop Streaming")
+            
+        self.streaming = not self.streaming
+        
+    def toggle_graph(self):
+        # Toggle graph visibility
+        self.graph_visible = not self.graph_visible
+        
+        if self.graph_visible:
+            self.ensure_graph_initialized()
+            self.view.get_sidebar().get_graph_button().setText("Hide Graph")
+        else:
+            self.view.toggle_graph_visibility(False)
+            self.view.get_sidebar().get_graph_button().setText("Show Graph")
+            
     def get_current_data_source_type(self):
-        # Get the currently selected data source type
         sidebar = self.view.get_sidebar()
         return sidebar.get_data_source_combo().currentText().lower()
         
     def get_selected_port(self):
-        # Get the currently selected port
         sidebar = self.view.get_sidebar()
         port_text = sidebar.get_port_dropdown().currentText()
-        # Remove any additional labels like "(Radio)"
         return port_text.split(' (')[0] if ' (' in port_text else port_text
         
     def refresh_ports(self):
-        # Refresh available COM ports
-        # Create a temporary serial source to get ports
         from data_sources import SerialDataSource
         temp_source = SerialDataSource()
         all_ports = temp_source.get_available_ports()
         
-        # Filter out "No Ports Available"
         available_ports = [p for p in all_ports if p != "No Ports Available"]
-        
-        # Detect which ports have radios
         radio_ports = DataSourceFactory.detect_radio_ports()
         
         dropdown = self.view.get_sidebar().get_port_dropdown()
@@ -78,7 +133,6 @@ class DashboardController:
         if not available_ports:
             dropdown.addItem("No ports available")
         else:
-            # Add ports with radio identification
             for port in available_ports:
                 if port in radio_ports:
                     dropdown.addItem(f"{port} (Radio)")
@@ -86,114 +140,96 @@ class DashboardController:
                     dropdown.addItem(port)
         
     def on_data_source_changed(self, source_name):
-        # Handle data source selection change
         source_name = source_name.lower()
         
-        # Update UI based on selection
         sidebar = self.view.get_sidebar()
         if source_name == "csv":
             sidebar.get_port_dropdown().hide()
-            # Hide the COM Port label
             for i in range(sidebar.layout().count()):
                 widget = sidebar.layout().itemAt(i).widget()
                 if isinstance(widget, QLabel) and widget.text() == "COM Port:":
                     widget.hide()
         else:
             sidebar.get_port_dropdown().show()
-            # Show the COM Port label
             for i in range(sidebar.layout().count()):
                 widget = sidebar.layout().itemAt(i).widget()
                 if isinstance(widget, QLabel) and widget.text() == "COM Port:":
                     widget.show()
             
-            # Refresh ports when switching to serial/radio
             self.refresh_ports()
         
-        # Disconnect if currently connected to a different source
         if self.connected:
-            self.disconnect()
+            self.disconnect_and_hide()
             
-        # Update connect button text
-        sidebar.get_connect_button().setText("Connect")
+        # Update button text based on connection state
+        sidebar.update_connect_button_text("Connect")
         
-    def toggle_connection(self):
-        # Connect or disconnect from the selected data source
-        if self.connected:
-            self.disconnect()
-        else:
-            self.connect()
-            
     def connect(self):
-        # Connect to the selected data source
         try:
             source_type = self.get_current_data_source_type()
             
-            # Create the appropriate data source
             if source_type == "csv":
                 self.current_data_source = DataSourceFactory.create_data_source(
                     'csv', 
                     csv_file_path=self.csv_file_path
                 )
-                # For CSV, we need to call connect() without parameters
                 if not self.current_data_source.connect():
                     print("CSV connection failed")
                     QMessageBox.warning(self.view, "Connection Error", 
                                     f"Failed to connect to CSV file: {self.csv_file_path}")
-                    return
+                    return False
             else:
-                # For serial/radio, get the selected port
                 selected_port = self.get_selected_port()
                 if selected_port == "No ports available":
                     QMessageBox.warning(self.view, "Connection Error", 
                                     "No COM ports available. Please check your connections.")
-                    return
+                    return False
                 
                 self.current_data_source = DataSourceFactory.create_data_source(
                     source_type,
                     csv_file_path=self.csv_file_path
                 )
                 
-                # Connect to specific port
                 if not self.current_data_source.connect(selected_port):
                     QMessageBox.warning(self.view, "Connection Error", 
                                     f"Failed to connect to {selected_port}")
-                    return
+                    return False
             
-            # Set up the model and update UI
             self.model.set_data_source(self.current_data_source)
             self.connected = True
             
-            # Update UI
+            # Update UI (but don't show status yet - that happens in connect_and_show_status)
             sidebar = self.view.get_sidebar()
-            sidebar.get_connect_button().setText("Disconnect")
             sidebar.get_data_source_combo().setEnabled(False)
             sidebar.get_port_dropdown().setEnabled(False)
             
-            # Show status display
-            self.show_status()
-            
             print(f"Connected to {source_type} data source")
+            return True
             
         except Exception as e:
             print(f"Connection error: {e}")
             QMessageBox.critical(self.view, "Connection Error", 
-                            f"Failed to connect: {str(e)}")            
+                            f"Failed to connect: {str(e)}")
+            return False
+            
     def disconnect(self):
-        # Disconnect from the current data source
         if self.current_data_source:
             self.current_data_source.disconnect()
         
-        # Stop streaming if active
         if self.streaming:
             self.toggle_streaming()
             
-        # Update UI
+        if self.altitude_graph:
+            self.altitude_graph.clear_graph()
+            
+        # Hide graph
+        self.view.toggle_graph_visibility(False)
+        self.graph_visible = False
+            
         sidebar = self.view.get_sidebar()
-        sidebar.get_connect_button().setText("Connect")
         sidebar.get_data_source_combo().setEnabled(True)
         sidebar.get_port_dropdown().setEnabled(True)
         
-        # Hide status display
         status_display = self.view.get_status_display()
         status_display.hide_all()
         
@@ -201,38 +237,7 @@ class DashboardController:
         self.current_data_source = None
         print("Disconnected from data source")
         
-    def show_status(self):
-        # Show the status display
-        if not self.connected:
-            QMessageBox.information(self.view, "Not Connected", 
-                                  "Please connect to a data source first.")
-            return
-            
-        status_display = self.view.get_status_display()
-        status_display.show_text()
-        status_display.show_buttons()
-        self.update_status()  # Get initial data
-        
-    def toggle_streaming(self):
-        # Start or stop live data streaming
-        if not self.connected:
-            QMessageBox.information(self.view, "Not Connected", 
-                                  "Please connect to a data source first.")
-            return
-            
-        status_display = self.view.get_status_display()
-        
-        if self.streaming:
-            self.timer.stop()
-            status_display.update_button.setText("Start Streaming")
-        else:
-            self.timer.start(20)  # Update every 20ms
-            status_display.update_button.setText("Stop Streaming")
-            
-        self.streaming = not self.streaming
-        
     def update_status(self):
-        # Update status from current data source
         if not self.connected or not self.current_data_source:
             print("Not connected or no data source")
             return
@@ -240,7 +245,6 @@ class DashboardController:
         if self.model.update_from_data_source():
             status_data = self.model.get_all_data()
             
-            # Choose appropriate formatter
             source_type = self.get_current_data_source_type()
             
             if source_type in ['csv', 'radio']:
@@ -250,14 +254,10 @@ class DashboardController:
                 left_text = self.text_formatter.get_left_column_text(status_data)
                 right_text = self.text_formatter.get_right_column_text(status_data)
             
-            # Update view
             status_display = self.view.get_status_display()
             status_display.update_text(left_text, right_text)
-        else:
-            print("Failed to update from data source")
     
     def clear_plm(self):
-        # Clear PLM - only works with serial-like sources
         if not self.connected:
             QMessageBox.information(self.view, "Not Connected", 
                                   "Please connect to a data source first.")
@@ -271,3 +271,12 @@ class DashboardController:
             QMessageBox.information(self.view, "Not Supported", 
                                   "Clear PLM only works with serial connections", 
                                   QMessageBox.StandardButton.Ok)
+    
+    def ensure_graph_initialized(self):
+        # Initialize the graph if not already done
+        if self.altitude_graph is None:
+            self.altitude_graph = AltitudeGraph(self.model, self.view.font_family, self.view)
+            self.view.set_altitude_graph(self.altitude_graph)
+        
+        # Show the graph
+        self.view.toggle_graph_visibility(True)

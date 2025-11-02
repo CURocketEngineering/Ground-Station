@@ -5,12 +5,12 @@ from .DataSource import DataSource
 from .SerialDataSource import SerialDataSource
 from .CSVDataSource import CSVDataSource
 from .RadioDataSource import RadioDataSource
-from .DataSourceFactory import DataSourceFactory
+from .LaunchDetector import LaunchDetector
 
 __all__ = [
     'DataSource',
     'SerialDataSource', 
     'CSVDataSource',
     'RadioDataSource',
-    'DataSourceFactory'
+    'LaunchDetector'
 ]
