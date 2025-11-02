@@ -1,26 +1,38 @@
 data_names:
+  - type: single
+    name: ACCELEROMETER_X
+    id: 0
+    unit: "m/s²"
+  - type: single
+    name: ACCELEROMETER_Y
+    id: 1
+    unit: "m/s²"
+  - type: single
+    name: ACCELEROMETER_Z
+    id: 2
+    unit: "m/s²"
   - type: group
     name: ACCELEROMETER
     id: 102
     unit: "m/s²"
-    data:
-      - name: ACCELEROMETER_X
-        id: 0
-      - name: ACCELEROMETER_Y
-        id: 1
-      - name: ACCELEROMETER_Z
-        id: 2
+    data: [0, 1, 2]
+  - type: single
+    name: GYROSCOPE_X
+    id: 3
+    unit: "°/s"
+  - type: single
+    name: GYROSCOPE_Y
+    id: 4
+    unit: "°/s"
+  - type: single
+    name: GYROSCOPE_Z
+    id: 5
+    unit: "°/s"
   - type: group
     name: GYROSCOPE
     id: 105
     unit: "°/s"
-    data:
-      - name: GYROSCOPE_X
-        id: 3
-      - name: GYROSCOPE_Y
-        id: 4
-      - name: GYROSCOPE_Z
-        id: 5
+    data: [3, 4, 5]
   - type: single
     name: TEMPERATURE
     id: 6
@@ -33,17 +45,23 @@ data_names:
     name: ALTITUDE
     id: 8
     unit: "m"
+  - type: single
+    name: MAGNETOMETER_X
+    id: 9
+    unit: "µT"
+  - type: single
+    name: MAGNETOMETER_Y
+    id: 10
+    unit: "µT"
+  - type: single
+    name: MAGNETOMETER_Z
+    id: 11
+    unit: "µT"
   - type: group
     name: MAGNETOMETER
     id: 111
     unit: "µT"
-    data:
-      - name: MAGNETOMETER_X
-        id: 9
-      - name: MAGNETOMETER_Y
-        id: 10
-      - name: MAGNETOMETER_Z
-        id: 11
+    data: [9, 10, 11]
   - type: single
     name: MEDIAN_ACCELERATION_SQUARED
     id: 12
