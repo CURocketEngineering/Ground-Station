@@ -18,15 +18,6 @@ class LaunchDetector:
         try:
             # Read CSV file
             df = pd.read_csv(csv_file_path)
-            print(f"Original CSV has {len(df)} rows")
-            
-            # Debug: Check timestamp range
-            if 'TIMESTAMP' in df.columns:
-                ts_data = pd.to_numeric(df['TIMESTAMP'], errors='coerce')
-                valid_ts = ts_data.dropna()
-                if len(valid_ts) > 0:
-                    print(f"Timestamp range: {valid_ts.min()} to {valid_ts.max()}")
-                    print(f"Valid timestamps: {len(valid_ts)} out of {len(df)} rows")
             
             # Find launch index
             launch_index = self._find_launch_index(df)
@@ -39,16 +30,6 @@ class LaunchDetector:
             trimmed_df = self._trim_around_launch(df, launch_index)
             
             launch_timestamp = self._get_launch_timestamp(df, launch_index)
-            
-            # Debug: Check trimmed timestamp range
-            if 'TIMESTAMP' in trimmed_df.columns:
-                ts_data = pd.to_numeric(trimmed_df['TIMESTAMP'], errors='coerce')
-                valid_ts = ts_data.dropna()
-                if len(valid_ts) > 0:
-                    print(f"Trimmed timestamp range: {valid_ts.min()} to {valid_ts.max()}")
-            
-            print(f"Launch detected at index {launch_index}, timestamp {launch_timestamp}")
-            print(f"Trimmed CSV from {len(df)} to {len(trimmed_df)} rows")
             
             return trimmed_df, launch_index, launch_timestamp
             
@@ -69,7 +50,6 @@ class LaunchDetector:
         for col in accel_columns:
             if col in df.columns and not df[col].isna().all():
                 accel_data = pd.to_numeric(df[col], errors='coerce').fillna(0)
-                print(f"Using accelerometer data from column: {col}")
                 break
         
         if accel_data is None:
@@ -110,10 +90,6 @@ class LaunchDetector:
             
             if wrap_points:
                 wrap_index = wrap_points[0]
-                print(f"Detected circular buffer wrap at index {wrap_index}")
-                print(f"Timestamp before wrap: {timestamp_data.iloc[wrap_index-1]}")
-                print(f"Timestamp after wrap: {timestamp_data.iloc[wrap_index]}")
-                
                 # Only look for launch BEFORE the wrap point (in recent data)
                 launch_indices = [idx for idx in launch_indices if idx < wrap_index]
                 
@@ -126,13 +102,11 @@ class LaunchDetector:
             if (launch_indices[i+1] - launch_indices[i] == 1 and 
                 launch_indices[i+2] - launch_indices[i+1] == 1):
                 launch_index = launch_indices[i]
-                print(f"Launch detected at index {launch_index} with G-force: {g_force_smooth.iloc[launch_index]:.2f}G")
                 return launch_index
         
         # Fallback: use the first launch detection
         if launch_indices:
             launch_index = launch_indices[0]
-            print(f"Launch detected at index {launch_index} (fallback) with G-force: {g_force_smooth.iloc[launch_index]:.2f}G")
             return launch_index
         
         print("No sustained launch acceleration found")
@@ -181,7 +155,6 @@ class LaunchDetector:
             # Use all data after launch if flag is set
             if self.use_all_post_launch:
                 post_launch_bound = timestamp_data.max()
-                print("Using all available post-launch data to end of file")
             else:
                 post_launch_bound = timestamp_data.max()
             
@@ -191,7 +164,6 @@ class LaunchDetector:
             
             actual_pre = (launch_timestamp - timestamp_data[mask].min()) / 1000.0
             actual_post = (timestamp_data[mask].max() - launch_timestamp) / 1000.0
-            print(f"Time-based trimming: {actual_pre:.1f}s before launch to {actual_post:.1f}s after launch (end of data)")
             
         else:
             # Fallback: use index-based trimming
@@ -208,9 +180,7 @@ class LaunchDetector:
                 end_index = total_rows
             
             trimmed_df = df.iloc[start_index:end_index].copy()
-            
-            print(f"Index-based trimming: rows {start_index} to {end_index}")
-        
+                    
         # Reset index for clean data
         trimmed_df = trimmed_df.reset_index(drop=True)
         return trimmed_df
@@ -222,10 +192,6 @@ class LaunchDetector:
             
             # Save trimmed CSV
             trimmed_df.to_csv(output_csv_path, index=False)
-            
-            print(f"Trimmed CSV saved to: {output_csv_path}")
-            print(f"Launch detected at index: {launch_index}, timestamp: {launch_timestamp}")
-            
             return True
             
         except Exception as e:

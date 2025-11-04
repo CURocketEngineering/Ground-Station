@@ -11,8 +11,8 @@ class StatusDisplay:
         
     def setup_ui(self):
         # Text displays only - buttons moved to sidebar
-        self.left_column = self.create_text_label("", 375, 51)
-        self.right_column = self.create_text_label("", 950, 51)
+        self.left_column = self.create_text_label("", 375, 50)
+        self.right_column = self.create_text_label("", 650, 50)
         
         # Initially hide elements
         self.hide_all()
@@ -20,7 +20,7 @@ class StatusDisplay:
     def create_text_label(self, text, x, y):
         label = QLabel(self.parent)
         label.setText(text)
-        label.setFont(QFont(self.font_family, 20))
+        label.setFont(QFont(self.font_family, 15))
         label.setStyleSheet(get_text_style())
         label.setWordWrap(True)
         label.move(x, y)

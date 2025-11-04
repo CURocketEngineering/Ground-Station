@@ -72,6 +72,12 @@ class Sidebar(QWidget):
         layout.addWidget(self.graph_button)
         self.graph_button.hide()
 
+        self.clear_graphs_button = QPushButton("Clear Graphs")
+        self.clear_graphs_button.setFont(QFont(self.font_family, 14))
+        self.clear_graphs_button.setStyleSheet(BUTTON_STYLE)
+        layout.addWidget(self.clear_graphs_button)
+        self.clear_graphs_button.hide()
+
         self.clear_plm_button = QPushButton("Clear PLM")
         self.clear_plm_button.setFont(QFont(self.font_family, 14))
         self.clear_plm_button.setStyleSheet(BUTTON_STYLE)
@@ -111,12 +117,14 @@ class Sidebar(QWidget):
         self.live_update_button.show()
         self.graph_button.show()
         self.clear_plm_button.show()
+        self.clear_graphs_button.show()
 
     def hide_control_buttons(self):
         # Hide the control buttons
         self.live_update_button.hide()
         self.graph_button.hide()
         self.clear_plm_button.hide()
+        self.clear_graphs_button.hide()
 
     def update_connect_button_text(self, text):
         # Update the connect button text
@@ -142,3 +150,6 @@ class Sidebar(QWidget):
 
     def get_clear_plm_button(self):
         return self.clear_plm_button
+
+    def get_clear_graphs_button(self):
+        return self.clear_graphs_button
