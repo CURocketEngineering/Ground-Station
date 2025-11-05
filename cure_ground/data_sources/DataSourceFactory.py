@@ -108,17 +108,12 @@ class DataSourceFactory:
         available_ports = [p for p in available_ports if p != "No Ports Available"]
         
         for port in available_ports:
-            try:
-                radio_source = cls.create_data_source('radio')
-                # Quick test connection to identify radio
-                if radio_source.connect(port):
-                    # Try to read some data to confirm it's a radio
-                    time.sleep(0.1)
-                    radio_source.disconnect()
-                    radio_ports.append(port)
-                    print(f"Detected radio on port: {port}")
-            except Exception as e:
-                print(f"Port {port} is not a radio: {e}")
+            radio_source = cls.create_data_source('radio', port=port)
+            
+            if radio_source.connect():
+                time.sleep(0.1)
+                radio_source.disconnect()
+                radio_ports.append(port)
         
         return radio_ports
     
