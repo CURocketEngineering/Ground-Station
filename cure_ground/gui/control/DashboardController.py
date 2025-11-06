@@ -177,7 +177,8 @@ class DashboardController:
         # Give graphs to the view so they get displayed
         self.view.set_altitude_graph(self.altitude_graph)
         self.view.set_accelerometer_graph(self.accelerometer_graph)
-        self.view.toggle_graph_visibility(True)
+        self.view.set_orientation_visual(self.orientation_visual)
+        self.view.toggle_graph_visual_visibility(True)
 
     # --------------------- STATUS UPDATES ---------------------
     def update_status(self):

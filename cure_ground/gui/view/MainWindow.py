@@ -28,6 +28,7 @@ class MainWindow(QMainWindow):
         # Graph placeholders
         self.altitude_graph = None
         self.accel_graph = None
+        self.orientation_visual = None
 
     def load_custom_font(self, font_path):
         font_id = QFontDatabase.addApplicationFont(font_path)
@@ -75,12 +76,24 @@ class MainWindow(QMainWindow):
             self.accel_graph.resize(500, 350)
             self.accel_graph.raise_()
             self.accel_graph.setAttribute(Qt.WidgetAttribute.WA_AlwaysStackOnTop, True)
+
+    def set_orientation_visual(self, visual_widget):
+        self.orientation_visual = visual_widget
+        if self.orientation_visual:
+            self.orientation_visual.setParent(self)
+            self.orientation_visual.move(300, 80)
+            self.orientation_visual.resize(500, 350)
+            self.orientation_visual.raise_()
+            self.orientation_visual.setAttribute(Qt.WidgetAttribute.WA_AlwaysStackOnTop, True)
             
-    def toggle_graph_visibility(self, visible):
+    def toggle_graph_visual_visibility(self, visible):
         if self.altitude_graph:
             self.altitude_graph.setVisible(visible)
         if self.accel_graph:
             self.accel_graph.setVisible(visible)
+        if self.orientation_visual:
+            self.orientation_visual.setVisible(visible)
         if visible:
             if self.altitude_graph: self.altitude_graph.raise_()
             if self.accel_graph: self.accel_graph.raise_()
+            if self.orientation_visual: self.orientation_visual.raise_()

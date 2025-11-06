@@ -43,39 +43,57 @@ class OrientationView(QWidget):
 
         # Timer for smooth updates (~60 FPS)
         self.timer = QTimer()
-        self.timer.timeout.connect(self._animate)
-        self.timer.start(10)
+        self.timer.timeout.connect(self._update_orientation)
+        self.timer.start(100)
 
-        data = status_model.status_data
+        self.data = status_model.status_data
 
-        accel = {
-            'x': data['ACCELEROMETER_X'],
-            'y': data['ACCELEROMETER_Y'],
-            'z': data['ACCELEROMETER_Z']
+        self.accel = {
+            'x': self.data['ACCELEROMETER_X'],
+            'y': self.data['ACCELEROMETER_Y'],
+            'z': self.data['ACCELEROMETER_Z']
         }
 
-        gyro = {
-            'x': data['GYROSCOPE_X'],
-            'y': data['GYROSCOPE_Y'],
-            'z': data['GYROSCOPE_Z']
+        self.gyro = {
+            'x': self.data['GYROSCOPE_X'],
+            'y': self.data['GYROSCOPE_Y'],
+            'z': self.data['GYROSCOPE_Z']
         }
 
-        timestamp = data['TIMESTAMP']
+        self.timestamp = self.data['TIMESTAMP']
 
-        kf = KalmanFilter()
-        while(timestamp):
-            kf.step(accel, gyro, timestamp)
-
-        orientation = kf.get_orientation_deg()
+        self.kf = KalmanFilter()
 
 
     # -----------------------------
-    def on_orientation_data(self, orientation, timestamp=None):
-        pitch, yaw, roll = orientation
-        self.target_pitch = pitch
-        self.target_yaw = yaw
-        self.target_roll = roll
+    def _update_orientation(self):
+        # Get latest sensor data
+        self.data = self.status_model.status_data
 
+        accel = {
+            'x': self.data['ACCELEROMETER_X'],
+            'y': self.data['ACCELEROMETER_Y'],
+            'z': self.data['ACCELEROMETER_Z']
+        }
+        gyro = {
+            'x': self.data['GYROSCOPE_X'],
+            'y': self.data['GYROSCOPE_Y'],
+            'z': self.data['GYROSCOPE_Z']
+        }
+        timestamp = self.data['TIMESTAMP']
+
+        # Run Kalman filter step
+        roll, pitch, yaw = self.kf.step(accel, gyro, timestamp)
+
+        # Update target angles for smooth animation
+        self.target_pitch = pitch
+        self.target_roll = roll
+        self.target_yaw = yaw
+
+        # Animate mesh
+        self._animate()
+
+    
     # -----------------------------
     def _animate(self):
         # Smooth interpolation

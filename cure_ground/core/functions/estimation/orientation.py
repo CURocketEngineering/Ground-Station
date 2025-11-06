@@ -80,8 +80,8 @@ class KalmanFilter:
         self.x = x_pred + K @ y
         self.P = (self.I6 - K @ self.H) @ P_pred
 
-        # Log results in degrees
-        self.orientation.append([timestamp, *np.degrees(self.x[0:3])])
+        # Return roll, pitch, yaw
+        return np.degrees(self.x[0:3])
     
     
     def get_orientation_rad(self):
