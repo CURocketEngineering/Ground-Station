@@ -4,12 +4,12 @@ from PyQt6.QtCore import QTimer
 import pyqtgraph.opengl as gl
 from PyQt6.QtGui import QMatrix4x4
 
-from data_sources import CSVDataSource
-from model.RocketModel import RocketModel  # your provided model
+from cure_ground.gui.model.RocketModel import RocketModel
+from cure_ground.core.functions.estimation.orientation import KalmanFilter
 
 
 class OrientationView(QWidget):
-    def __init__(self, parent=None, csv_file_path=None):
+    def __init__(self, parent=None, status_model=None):
         super().__init__(parent)
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
@@ -46,10 +46,28 @@ class OrientationView(QWidget):
         self.timer.timeout.connect(self._animate)
         self.timer.start(10)
 
-        # CSV Data Source
-        self.source = None # Placeholder
-        self.source.set_callback(self.on_orientation_data)
-        self.source.start()
+        data = status_model.status_data
+
+        accel = {
+            'x': data['ACCELEROMETER_X'],
+            'y': data['ACCELEROMETER_Y'],
+            'z': data['ACCELEROMETER_Z']
+        }
+
+        gyro = {
+            'x': data['GYROSCOPE_X'],
+            'y': data['GYROSCOPE_Y'],
+            'z': data['GYROSCOPE_Z']
+        }
+
+        timestamp = data['TIMESTAMP']
+
+        kf = KalmanFilter()
+        while(timestamp):
+            kf.step(accel, gyro, timestamp)
+
+        orientation = kf.get_orientation_deg()
+
 
     # -----------------------------
     def on_orientation_data(self, orientation, timestamp=None):

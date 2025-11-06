@@ -5,6 +5,7 @@ from PyQt6.QtWidgets import QMessageBox, QLabel
 
 from cure_ground.data_sources.DataSourceFactory import DataSourceFactory
 from cure_ground.gui.model.StatusModel import StatusModel
+from cure_ground.gui.view.OrientationVisual import OrientationView
 from cure_ground.gui.view.TextFormatter import TextFormatter
 from cure_ground.gui.view.TextFormatterCSV import TextFormatterCSV
 from cure_ground.gui.view.TextFormatterRadio import TextFormatterRadio
@@ -26,6 +27,7 @@ class DashboardController:
         # Graphs
         self.altitude_graph = None
         self.accelerometer_graph = None
+        self.orientation_visual = None
 
         # CSV path only used for CSV sources
         self.csv_file_path = "cure_ground/gui/resources/OldData.csv"
@@ -166,6 +168,8 @@ class DashboardController:
             self.altitude_graph = AltitudeGraph()
         if self.accelerometer_graph is None:
             self.accelerometer_graph = AccelerometerGraph()
+        if self.orientation_visual is None:
+            self.orientation_visual = OrientationView(status_model=self.model)
 
         self.altitude_graph.set_model(self.model)
         self.accelerometer_graph.set_model(self.model)
