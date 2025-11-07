@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QComboBox, QLabel
+from PyQt6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QComboBox, QLabel, QSizePolicy
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt
 
@@ -9,6 +9,8 @@ class Sidebar(QWidget):
         super().__init__(parent)
         self.font_family = font_family
         self.setup_ui()
+
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         
     def setup_ui(self):
         self.setGeometry(75, 80, 250, 700)
@@ -19,6 +21,8 @@ class Sidebar(QWidget):
         layout = QVBoxLayout(self)
         layout.setSpacing(10)
         layout.setContentsMargins(10, 20, 10, 20)
+
+        layout.setStretch(0, 1)
 
         # Data Source Selection
         source_label = QLabel("Data Source:")
@@ -50,16 +54,16 @@ class Sidebar(QWidget):
         self.refresh_button.setStyleSheet(BUTTON_STYLE)
         layout.addWidget(self.refresh_button)
 
-        # Connect/Status button (merged functionality)
+        # Connect button
         self.connect_button = QPushButton("Connect")
         self.connect_button.setFont(QFont(self.font_family, 16))
         self.connect_button.setStyleSheet(BUTTON_STYLE)
         layout.addWidget(self.connect_button)
 
-        # Add spacer to push control buttons to bottom
+        # Spacer for bottom buttons
         layout.addStretch()
 
-        # Control buttons (initially hidden, shown after connection)
+        # Control buttons (initially hidden)
         self.live_update_button = QPushButton("Start Streaming")
         self.live_update_button.setFont(QFont(self.font_family, 14))
         self.live_update_button.setStyleSheet(BUTTON_STYLE)
@@ -83,13 +87,13 @@ class Sidebar(QWidget):
         self.clear_plm_button.setStyleSheet(BUTTON_STYLE)
         layout.addWidget(self.clear_plm_button)
         self.clear_plm_button.hide()
-        
-        # Connect data source change signal
+
+        # Connect signal
         self.data_source_combo.currentTextChanged.connect(self.on_data_source_changed)
-        
-        # Initially set state for "Select" option
+
+        # Default state
         self.on_data_source_changed("Select")
-        
+
     def on_data_source_changed(self, source_name):
         source_lower = source_name.lower()
         
@@ -113,23 +117,20 @@ class Sidebar(QWidget):
             self.hide_control_buttons()
 
     def show_control_buttons(self):
-        # Show the control buttons at the bottom of the sidebar
         self.live_update_button.show()
         self.graph_button.show()
         self.clear_plm_button.show()
         self.clear_graphs_button.show()
 
     def hide_control_buttons(self):
-        # Hide the control buttons
         self.live_update_button.hide()
         self.graph_button.hide()
         self.clear_plm_button.hide()
         self.clear_graphs_button.hide()
 
     def update_connect_button_text(self, text):
-        # Update the connect button text
         self.connect_button.setText(text)
-        
+
     def get_data_source_combo(self):
         return self.data_source_combo
         

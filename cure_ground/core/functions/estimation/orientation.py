@@ -74,7 +74,7 @@ class KalmanFilter:
         S = self.H @ P_pred @ self.H.T + self.R
 
         # Kalman gain
-        K = np.linalg.solve(S.T, (self.H @ P_pred).T).T
+        K = P_pred @ self.H.T @ np.linalg.inv(S)
 
         # State & covariance update
         self.x = x_pred + K @ y

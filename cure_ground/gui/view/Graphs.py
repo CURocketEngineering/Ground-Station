@@ -1,7 +1,6 @@
-from PyQt6.QtWidgets import QWidget, QVBoxLayout
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QSizePolicy
 from PyQt6.QtCore import QTimer
 import pyqtgraph as pg
-
 
 class BaseGraph(QWidget):
     def __init__(self, title: str, y_label: str):
@@ -12,6 +11,10 @@ class BaseGraph(QWidget):
         self.plot_widget.setTitle(title)
         self.plot_widget.setLabel('left', y_label)
         self.plot_widget.setLabel('bottom', 'Time (s)')
+
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.plot_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+
         self.layout().addWidget(self.plot_widget)
 
         # Graph lines (child classes set them)
@@ -30,6 +33,14 @@ class BaseGraph(QWidget):
     def set_model(self, model):
         self.model = model
 
+    def clear_graph(self):
+        """Clears all plotted data from the graph."""
+        try:
+            for line in self.lines:
+                line.clear()
+        except:
+            pass
+
     def update_graph(self):
         if self.model is None:
             return
@@ -39,11 +50,11 @@ class BaseGraph(QWidget):
         """Override in subclasses"""
         pass
 
-
 class AltitudeGraph(BaseGraph):
     def __init__(self):
         super().__init__("Altitude", "Altitude (m)")
         self.line = self.plot_widget.plot(pen=pg.mkPen(width=2))
+        self.lines = [self.line]
 
     def _update_plot_data(self):
         times, altitudes = self.model.get_graph_data()
@@ -59,6 +70,7 @@ class AccelerometerGraph(BaseGraph):
         self.line_x = self.plot_widget.plot(pen=pg.mkPen('r', width=2), name='Accel X')
         self.line_y = self.plot_widget.plot(pen=pg.mkPen('g', width=2), name='Accel Y')
         self.line_z = self.plot_widget.plot(pen=pg.mkPen('b', width=2), name='Accel Z')
+        self.lines = [self.line_x, self.line_y, self.line_z]
 
     def _update_plot_data(self):
         times, ax, ay, az = self.model.get_accel_graph_data()
