@@ -24,6 +24,7 @@ class DashboardController:
         self.current_data_source = None
         self.connected = False
         self.graph_visible = False
+        self._last_text_update = 0
 
         # Graphs
         self.altitude_graph = None
@@ -150,7 +151,7 @@ class DashboardController:
             self.timer.stop()
             sidebar.get_live_update_button().setText("Start Streaming")
         else:
-            self.timer.start(10)
+            self.timer.start(50)
             sidebar.get_live_update_button().setText("Stop Streaming")
         self.streaming = not self.streaming
 
@@ -206,27 +207,12 @@ class DashboardController:
             else:
                 formatter = self.text_formatter
 
-            left_text = formatter.get_left_column_text(status_data)
-            right_text = formatter.get_right_column_text(status_data)
-            self.view.get_status_display().update_text(left_text, right_text)
-
-            # --- GRAPH UPDATE ---
-            if self.graph_visible:
-                if self.altitude_graph:
-                    timestamps, altitudes = self.model.get_graph_data()
-                    if timestamps and altitudes:
-                        try:
-                            self.altitude_graph.update(timestamps, altitudes)
-                        except:
-                            pass
-
-                if self.accelerometer_graph:
-                    ts, x, y, z = self.model.get_accel_graph_data()
-                    if ts:
-                        try:
-                            self.accelerometer_graph.update(ts, x, y, z)
-                        except:
-                            pass
+            now = time.time()
+            if now - self._last_text_update > 0.05:  # update text at ~20 FPS max
+                left_text = formatter.get_left_column_text(status_data)
+                right_text = formatter.get_right_column_text(status_data)
+                self.view.get_status_display().update_text(left_text, right_text)
+                self._last_text_update = now
 
     # --------------------- HELPERS ---------------------
     def clear_plm(self):

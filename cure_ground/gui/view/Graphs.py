@@ -26,7 +26,7 @@ class BaseGraph(QWidget):
         # Refresh timer
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_graph)
-        self.timer.start(100)  # refresh at 10 FPS
+        self.timer.start(200)
 
         self.model = None  # Set later
 
