@@ -6,7 +6,7 @@ from collections import deque
 
 
 class GraphDataManager:
-    def __init__(self, max_points: int = 10000):  # Increased for longer flights
+    def __init__(self, max_points: int = 5000):  # Increased for longer flights
         self.max_points = max_points
         
         # Altitude

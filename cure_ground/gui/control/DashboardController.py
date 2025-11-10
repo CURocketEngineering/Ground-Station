@@ -1,14 +1,16 @@
 import struct
 import time
 from PyQt6.QtCore import QTimer
-from PyQt6.QtWidgets import QMessageBox, QLabel
+from PyQt6.QtWidgets import QMessageBox
 
 from cure_ground.data_sources.DataSourceFactory import DataSourceFactory
 from cure_ground.gui.model.StatusModel import StatusModel
+from cure_ground.gui.view.OrientationVisual import OrientationView
+from cure_ground.gui.view.Graphs import AltitudeGraph, AccelerometerGraph
 from cure_ground.gui.view.TextFormatter import TextFormatter
 from cure_ground.gui.view.TextFormatterCSV import TextFormatterCSV
 from cure_ground.gui.view.TextFormatterRadio import TextFormatterRadio
-from cure_ground.gui.view.Graphs import AltitudeGraph, AccelerometerGraph
+
 
 class DashboardController:
     def __init__(self, view):
@@ -22,10 +24,12 @@ class DashboardController:
         self.current_data_source = None
         self.connected = False
         self.graph_visible = False
+        self._last_text_update = 0
 
         # Graphs
         self.altitude_graph = None
         self.accelerometer_graph = None
+        self.orientation_visual = None
 
         # CSV path only used for CSV sources
         self.csv_file_path = "cure_ground/gui/resources/OldData.csv"
@@ -123,7 +127,7 @@ class DashboardController:
         if self.accelerometer_graph:
             self.accelerometer_graph.clear_graph()
 
-        self.view.toggle_graph_visibility(False)
+        self.view.toggle_graph_visual_visibility(False)
         self.graph_visible = False
 
         sidebar = self.view.get_sidebar()
@@ -147,7 +151,7 @@ class DashboardController:
             self.timer.stop()
             sidebar.get_live_update_button().setText("Start Streaming")
         else:
-            self.timer.start(10)
+            self.timer.start(50)
             sidebar.get_live_update_button().setText("Stop Streaming")
         self.streaming = not self.streaming
 
@@ -158,29 +162,40 @@ class DashboardController:
             self.ensure_graphs_initialized()
             self.view.get_sidebar().get_graph_button().setText("Hide Graphs")
         else:
-            self.view.toggle_graph_visibility(False)
+            self.view.toggle_graph_visual_visibility(False)
             self.view.get_sidebar().get_graph_button().setText("Show Graphs")
 
     def ensure_graphs_initialized(self):
-        if self.altitude_graph is None:
-            self.altitude_graph = AltitudeGraph()
+        # Accelerometer (top right)
         if self.accelerometer_graph is None:
             self.accelerometer_graph = AccelerometerGraph()
+            self.view.set_accelerometer_graph(self.accelerometer_graph)
 
-        self.altitude_graph.set_model(self.model)
+        # Orientation (bottom left)
+        if self.orientation_visual is None:
+            self.orientation_visual = OrientationView(status_model=self.model)
+            self.view.set_orientation_visual(self.orientation_visual)
+
+        # Altitude (bottom right)
+        if self.altitude_graph is None:
+            self.altitude_graph = AltitudeGraph()
+            self.view.set_altitude_graph(self.altitude_graph)
+
+        # Attach model once
         self.accelerometer_graph.set_model(self.model)
+        self.altitude_graph.set_model(self.model)
 
-        # Give graphs to the view so they get displayed
-        self.view.set_altitude_graph(self.altitude_graph)
-        self.view.set_accelerometer_graph(self.accelerometer_graph)
-        self.view.toggle_graph_visibility(True)
+        # Show them
+        self.view.toggle_graph_visual_visibility(True)
+
+        # Force initial layout update
+        self.view.resizeEvent(None)
 
     # --------------------- STATUS UPDATES ---------------------
     def update_status(self):
         if not self.connected or not self.current_data_source:
             return
 
-        # Only update if new data is available
         if self.model.update_from_data_source():
             status_data = self.model.get_all_data()
             source_type = self.get_current_data_source_type()
@@ -192,30 +207,12 @@ class DashboardController:
             else:
                 formatter = self.text_formatter
 
-            left_text = formatter.get_left_column_text(status_data)
-            right_text = formatter.get_right_column_text(status_data)
-            self.view.get_status_display().update_text(left_text, right_text)
-
-            # --- GRAPH UPDATE ---
-            if self.graph_visible:
-
-                # Altitude Graph: Use stored time-series, not single value
-                if self.altitude_graph:
-                    timestamps, altitudes = self.model.get_graph_data()
-                    if timestamps and altitudes:
-                        try:
-                            self.altitude_graph.update(timestamps, altitudes)
-                        except:
-                            pass
-
-                # Accelerometer Graph: Use stored time-series
-                if self.accelerometer_graph:
-                    ts, x, y, z = self.model.get_accel_graph_data()
-                    if ts:
-                        try:
-                            self.accelerometer_graph.update(ts, x, y, z)
-                        except:
-                            pass
+            now = time.time()
+            if now - self._last_text_update > 0.05:  # update text at ~20 FPS max
+                left_text = formatter.get_left_column_text(status_data)
+                right_text = formatter.get_right_column_text(status_data)
+                self.view.get_status_display().update_text(left_text, right_text)
+                self._last_text_update = now
 
     # --------------------- HELPERS ---------------------
     def clear_plm(self):
@@ -245,12 +242,10 @@ class DashboardController:
         from cure_ground.data_sources import SerialDataSource
         temp_source = SerialDataSource()
         all_ports = temp_source.get_available_ports()
-        print("All ports:", all_ports)
-        
+
         available_ports = [p for p in all_ports if p != "No Ports Available"]
         radio_ports = DataSourceFactory.detect_radio_ports()
-        print("Detected radio ports:", radio_ports)
-        
+
         dropdown = self.view.get_sidebar().get_port_dropdown()
         dropdown.clear()
         if not available_ports:
@@ -269,13 +264,13 @@ class DashboardController:
             sidebar.get_port_dropdown().hide()
             for i in range(sidebar.layout().count()):
                 widget = sidebar.layout().itemAt(i).widget()
-                if isinstance(widget, QLabel) and widget.text() == "COM Port:":
+                if widget and hasattr(widget, "text") and widget.text() == "COM Port:":
                     widget.hide()
         else:
             sidebar.get_port_dropdown().show()
             for i in range(sidebar.layout().count()):
                 widget = sidebar.layout().itemAt(i).widget()
-                if isinstance(widget, QLabel) and widget.text() == "COM Port:":
+                if widget and hasattr(widget, "text") and widget.text() == "COM Port:":
                     widget.show()
             self.refresh_ports()
 
