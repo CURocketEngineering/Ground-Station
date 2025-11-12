@@ -1,16 +1,24 @@
 #ifndef HEADER_H
 #define HEADER_H
 
+#include <Arduino.h>
+#include <HX711.h>
 
-readcommands();
-process_command();
-openpurge();
-closepurge();
-quit_program();
-dump_nitrous();
-fire_cycle();
-close_fire_relay();
-open_fire_relay();
+
+
+void readcommands();
+void process_command();
+void openpurge();
+void closepurge();
+void quit_program();
+void dump_nitrous();
+void fire_cycle();
+void close_fire_relay();
+void open_fire_relay();
+
+void enterSafeMode();
+void enterArmedMode();
+void emergencyAbort();
 
 
 #endif
