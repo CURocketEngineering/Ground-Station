@@ -1,21 +1,20 @@
 #ifndef HEADER_H
 #define HEADER_H
 
+#include <Arduino.h>
+#include <HX&11.h>
 
-user_input();
-user_input_thread_start();
-process_command();
-enter_safe_mode();
-enter_armed_mode();
-close_purge_relay();
-open_purge_relay();
-close_fill_relay();
-open_fill_relay();
-open_fire_relay();
-close_fire_relay();
-fire_cycle();
-dump_nitrous();
-quit_program();
+void readcommands();
+void processCommand(string cmd);
+
+void enterSafeMode();
+void enterArmedMode();
+
+void quit_program();
+void dump_nitrous();
+void fire_cycle();
+
+void readAndSendLoadCell();
 
 #endif
 
