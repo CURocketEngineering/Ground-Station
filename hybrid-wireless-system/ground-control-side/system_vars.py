@@ -18,7 +18,7 @@ import numpy as np
 
 
 # Serial config
-SERIAL_PORT = "COM18"  # Change to your port
+SERIAL_PORT = "COM18"  # Change to XBee port 
 BAUD_RATE = 115200
 
 # Logging
