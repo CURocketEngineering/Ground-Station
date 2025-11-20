@@ -6,7 +6,7 @@ class StatusDisplay(QWidget):
     def __init__(self, parent, font_family):
         super().__init__(parent)
         self.font_family = font_family
-        self.base_font_size = 15
+        self.base_font_size = 20
         self.setup_ui()
 
     def setup_ui(self):
@@ -20,7 +20,9 @@ class StatusDisplay(QWidget):
     def create_text_label(self, text, x, y):
         label = QLabel(self)
         label.setText(text)
-        label.setFont(QFont(self.font_family, self.base_font_size))
+        font = QFont(self.font_family, self.base_font_size)
+        font.setBold(True)
+        label.setFont(font)
         label.setStyleSheet(get_text_style())
         label.setWordWrap(True)
         label.move(x, y)

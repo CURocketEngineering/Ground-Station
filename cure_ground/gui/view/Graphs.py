@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QSizePolicy
 from PyQt6.QtCore import QTimer
+from PyQt6.QtGui import QFont
 import pyqtgraph as pg
 
 class BaseGraph(QWidget):
@@ -50,31 +51,53 @@ class BaseGraph(QWidget):
         """Override in subclasses"""
         pass
 
-class AltitudeGraph(BaseGraph):
+class MergedGraph(BaseGraph):
     def __init__(self):
-        super().__init__("Altitude", "Altitude (m)")
-        self.line = self.plot_widget.plot(pen=pg.mkPen(width=2))
-        self.lines = [self.line]
+        super().__init__("Flight Data", "Value")
+
+        # --- White background + bold axes ---
+        self.plot_widget.setBackground("w")
+
+        axis = self.plot_widget.getAxis("left")
+        axis.setPen(pg.mkPen(color="k", width=3))
+        axis.setTextPen(pg.mkPen(color="k")) 
+        axis.setStyle(tickFont=pg.QtGui.QFont("Arial", 12, QFont.Weight.Bold))
+
+        axis = self.plot_widget.getAxis("bottom")
+        axis.setPen(pg.mkPen(color="k", width=3))
+        axis.setTextPen(pg.mkPen(color="k"))
+        axis.setStyle(tickFont=pg.QtGui.QFont("Arial", 12, QFont.Weight.Bold))
+
+        # --- Plot lines ---
+        self.alt_line = self.plot_widget.plot(
+            pen=pg.mkPen(color="k", width=5), name="Altitude"
+        )
+        self.ax_line = self.plot_widget.plot(
+            pen=pg.mkPen(color="r", width=4), name="Accel X"
+        )
+        self.ay_line = self.plot_widget.plot(
+            pen=pg.mkPen(color="g", width=4), name="Accel Y"
+        )
+        self.az_line = self.plot_widget.plot(
+            pen=pg.mkPen(color="b", width=4), name="Accel Z"
+        )
+
+        self.lines = [
+            self.alt_line,
+            self.ax_line,
+            self.ay_line,
+            self.az_line
+        ]
 
     def _update_plot_data(self):
-        times, altitudes = self.model.get_graph_data()
+        # Get data from model
+        times, altitude = self.model.get_graph_data()
+        t2, ax, ay, az = self.model.get_accel_graph_data()
+
         if len(times) > 2:
-            self.line.setData(times, altitudes)
+            self.alt_line.setData(times, altitude)
 
-
-class AccelerometerGraph(BaseGraph):
-    def __init__(self):
-        super().__init__("Accelerometer", "Acceleration (m/s²)")
-
-        # Three lines: X, Y, Z axes with names for legend
-        self.line_x = self.plot_widget.plot(pen=pg.mkPen('r', width=2), name='Accel X')
-        self.line_y = self.plot_widget.plot(pen=pg.mkPen('g', width=2), name='Accel Y')
-        self.line_z = self.plot_widget.plot(pen=pg.mkPen('b', width=2), name='Accel Z')
-        self.lines = [self.line_x, self.line_y, self.line_z]
-
-    def _update_plot_data(self):
-        times, ax, ay, az = self.model.get_accel_graph_data()
-        if len(times) > 2:
-            self.line_x.setData(times, ax)
-            self.line_y.setData(times, ay)
-            self.line_z.setData(times, az)
+        if len(t2) > 2:
+            self.ax_line.setData(t2, ax)
+            self.ay_line.setData(t2, ay)
+            self.az_line.setData(t2, az)
