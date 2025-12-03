@@ -76,6 +76,7 @@ def process_command(command):
             print("\t[ℹ] Cancelling fire cycle.")
             return
     elif command == "CMD:ABORT":
+        ser.write(b'ABORT')
         close_purge_relay()
         enter_safe_mode()
         print("\t[ℹ] System aborted. All relays off.")
@@ -98,6 +99,7 @@ def enter_safe_mode():
     if system_state != "SAFE":
         print("\t[ℹ] Entering safe mode.")
     system_state = "SAFE"
+    ser.write(b'safe_')
     close_fill_relay()
     visualize_safe_mode()
 
@@ -106,6 +108,7 @@ def enter_armed_mode():
     if system_state != "ARMED":
         print("\t[ℹ] Entering armed mode.")
     system_state = "ARMED"
+    ser.write(b'ARM__')
     close_purge_relay()
     visualize_armed_mode()
 
@@ -121,6 +124,7 @@ def open_purge_relay():
     if relay_state["PURGE"] == 0:
         print("\t[ℹ] Opening purge relay.")
     relay_state["PURGE"] = 1  # Open purge relay
+    ser.write(b'PURGE')
     visualize_purge_relay_on()  # Update UI to show purge relay is open
 
 def close_fill_relay():
@@ -135,6 +139,7 @@ def open_fill_relay():
     if relay_state["FILL"] == 0:
         print("\t[ℹ] Opening fill relay.")
     relay_state["FILL"] = 1  # Open fill relay
+    ser.write(b'fill_')
     visualize_fill_relay_on()  # Update UI to show fill relay is open
     print (f"global motor filled state: {motor_filled}")
 
@@ -143,6 +148,7 @@ def open_fire_relay():
     if relay_state["FIRE"] == 0:
         print("\t[ℹ] Opening fire relay.")
     relay_state["FIRE"] = 1  # Open fire relay
+    ser.write(b'fire_')
     visualize_fire_relay_on()  # Update UI to show fire relay is open
     
 def close_fire_relay():
