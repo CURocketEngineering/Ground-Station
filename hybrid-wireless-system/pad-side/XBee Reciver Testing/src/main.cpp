@@ -11,10 +11,10 @@ int i = 0;
 unsigned long lastSend = 0;
 
 // define fill purge fire pins
-const int FILL_PIN = 4;
+const int FILL_PIN = 3;
 const int PURGE_PIN = 2;
-const int FIRE_PIN = 3;
-const int SAFETY_PIN = 5;
+const int FIRE_PIN = 4;
+const int ARM_PIN = 5;
 
 //Functions for checking the commands
 void check_purge(char* buf);
@@ -30,7 +30,7 @@ void setup() {
   pinMode(FILL_PIN, OUTPUT);
   pinMode(PURGE_PIN, OUTPUT);
   pinMode(FIRE_PIN, OUTPUT);
-  pinMode(SAFETY_PIN, OUTPUT);
+  pinMode(ARM_PIN, OUTPUT);
 
   XBee.begin(9600);
 
@@ -117,8 +117,14 @@ XBee.write(Serial.read());
    if (strncmp(buf, "PURGE", BUFFER_SIZE) == 0) {
      XBee.println("Purge command detected!");
     
-     digitalWrite(SAFETY_PIN, LOW);
-     XBee.println("Safety Off");
+     digitalWrite(FILL_PIN, LOW);
+     XBee.println("FILLING OFF");
+
+    digitalWrite(FIRE_PIN, LOW);
+     XBee.println("FIREING OFF");
+
+    digitalWrite(ARM_PIN, LOW);
+     XBee.println("Safety off");
 
      digitalWrite(PURGE_PIN, HIGH);
      XBee.println("Purging...");
@@ -131,8 +137,6 @@ XBee.write(Serial.read());
      if (strncmp(buf, "fill_", BUFFER_SIZE - 1) == 0) { // "fill" is 4 chars, no null needed
      XBee.println("Fill command detected!");
 
-    //  digitalWrite(SAFETY_PIN, HIGH);
-    //  XBee.println("Safety On");
 
      digitalWrite(FILL_PIN, HIGH);
      XBee.println("FILLING...");
@@ -163,12 +167,19 @@ XBee.write(Serial.read());
 void check_ABORT(char* buf){
   if (strncmp(buf, "ABORT", BUFFER_SIZE - 1) == 0) { // "fire" is 4 chars, no null needed
      XBee.println("ABORT command detected!");
+   
+  digitalWrite(FILL_PIN, LOW);
+     XBee.println("FILL OFF");
 
+  digitalWrite(FIRE_PIN, LOW);
+     XBee.println("FIREING OFF");
+
+  digitalWrite(ARM_PIN, LOW);
+     XBee.println("NOT ARMED");
+   
    digitalWrite(PURGE_PIN, HIGH);
-     XBee.println("Purging...");
+     XBee.println("Purging OFF");
 
-   digitalWrite(SAFETY_PIN, HIGH);
-     XBee.println("Safety On");
 
 //     // Add any additional action here for the "fuel" command
    }
@@ -179,8 +190,11 @@ void check_ARM(char* buf){
   if (strncmp(buf, "ARM__", BUFFER_SIZE - 1) == 0) { // "fire" is 4 chars, no null needed
      XBee.println("ARM command detected!");
 
-   digitalWrite(PURGE_PIN, LOW);
+    digitalWrite(PURGE_PIN, LOW);
      XBee.println("Purge Closing");
+    
+    digitalWrite(ARM_PIN, HIGH);
+     XBee.println("ARMED");
 
    }
 
@@ -188,11 +202,13 @@ void check_ARM(char* buf){
 void check_SAFE(char* buf){
   if (strncmp(buf, "safe_", BUFFER_SIZE - 1) == 0) { // "fill" is 4 chars, no null needed
 
-    //  digitalWrite(SAFETY_PIN, HIGH);
-    XBee.println("Safety On");
+    XBee.println("NOT ARMED");
 
      digitalWrite(FILL_PIN, LOW);
      XBee.println("FILLING OFF");
+
+     digitalWrite(ARM_PIN, LOW);
+     XBee.println("NOT ARMED");
 
     
      // Add any additional action here for the "fuel" command
