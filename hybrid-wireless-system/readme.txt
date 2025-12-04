@@ -34,7 +34,6 @@ This is a platformio project since the workflow for platformio allows flexibilit
 
 
 
-
 When moving from a nano to a teensy:
 - change the board in platformio.ini
 [env:teensy41]
