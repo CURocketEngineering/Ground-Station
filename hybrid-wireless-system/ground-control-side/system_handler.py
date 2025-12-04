@@ -11,7 +11,7 @@ def user_input():
         "FIRE": "ARMED",
         "DUMP": "SAFE",
         "ABORT": "ANY",
-        "QUIT": "SAFE"
+        "QUIT": "SAFE",
     }
     
     while True:
@@ -176,6 +176,8 @@ def dump_nitrous():
         # loop between the fill and purge valves to dump the nitrous
         for _ in range(5):  # Adjust the number of dumps as needed
             time.sleep(1)  # Wait before the next dump
+            enter_armed_mode()
+            time.sleep(1)
             open_fill_relay()
             time.sleep(1)  # Wait for a short period to allow filling
             close_fill_relay()
@@ -184,6 +186,7 @@ def dump_nitrous():
             time.sleep(1)  # Wait for a short period to allow purging
             close_purge_relay()
         print("\t[ℹ] Nitrous dump complete.")
+        enter_safe_mode()
     elif response == "no":
         print("\t[ℹ] Cancelling dump.")
     else:
