@@ -19,7 +19,7 @@ def animate(i):
 
 def serial_thread():
     try:
-        with serial.Serial('/dev/tty.usbserial-D30DUX5E', 9600, timeout=1) as ser, open(LOG_FILE, "w") as log:
+        with serial.Serial('YOUR_SERIAL_PORT', 9600, timeout=1) as ser, open(LOG_FILE, "w") as log:
             while True:
                 # 1. Read from serial and log it
                 line = ser.readline().decode("utf-8").strip()

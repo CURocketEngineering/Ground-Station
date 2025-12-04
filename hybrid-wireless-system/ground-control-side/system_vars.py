@@ -18,7 +18,7 @@ import numpy as np
 
 
 # Serial config
-ser = serial.Serial('/dev/tty.usbserial-D30DUX5E', 9600, timeout=1)
+ser = serial.Serial('YOUR_SERIAL_PORT', 9600, timeout=1)
 print('Listening...')
 
 # Logging
