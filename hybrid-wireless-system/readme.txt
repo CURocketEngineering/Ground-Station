@@ -1,4 +1,4 @@
-# Getting Started
+# Heading 1
 cd hybrid-wireless-system
 python -m venv .venv
 .\ground-control-system\.venv\Scripts\activate
