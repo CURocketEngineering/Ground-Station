@@ -19,13 +19,13 @@ def animate(i):
 
 def serial_thread():
     try:
-        with serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1) as ser, open(LOG_FILE, "w") as log:
+        with serial.Serial('YOUR_SERIAL_PORT', 9600, timeout=1) as ser, open(LOG_FILE, "w") as log:
             while True:
                 # 1. Read from serial and log it
                 line = ser.readline().decode("utf-8").strip()
                 if line:
                     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                    log_entry = f"{timestamp} | DATA_RECV | {line}"
+                    log_entry = f"\n{timestamp} | DATA_RECV | {line}"
                     print(log_entry)
                     log.write(log_entry + "\n")
                     log.flush()
