@@ -5,6 +5,9 @@ setup(
     version="0.1.0",
     packages=find_packages(),
     install_requires=[
+        "numpy>=1.23.0",
+        "psutil>=5.9.0",
+        "PyOpenGL>=3.1.7",
         "pyqt6",
         "typer>=0.9.0",
         "rich>=13.0.0",
