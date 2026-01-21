@@ -35,7 +35,8 @@ def main(path_to_csv, first_id, ten_sec_launch):
     # Only keep data where timestamp is 2 seconds before launch and 20 seconds after launch
     if ten_sec_launch:
         df = df[
-            (df["timestamp"] > launch_time - 2 * 1000) & (df["timestamp"] < launch_time + 60 * 1000)
+            (df["timestamp"] > launch_time - 2 * 1000)
+            & (df["timestamp"] < launch_time + 60 * 1000)
         ]
 
     print("launch time: ", launch_time)

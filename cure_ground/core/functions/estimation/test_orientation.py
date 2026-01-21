@@ -1,11 +1,14 @@
 """
 Uses simulated data to compare estimated orientation against known orientation.
 """
+
 import pandas as pd
 import matplotlib.pyplot as plt
 
 # --- Load CSV ---
-df = pd.read_csv(r"/Users/randy/Documents/Telemetry Dashboard/data/angular_velocity_deg_100hz.csv")
+df = pd.read_csv(
+    r"/Users/randy/Documents/Telemetry Dashboard/data/angular_velocity_deg_100hz.csv"
+)
 
 # --- Extract relevant columns ---
 t = df["time_s"]

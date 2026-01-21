@@ -8,8 +8,15 @@ class RocketModel:
     Includes fins, nozzle, and simulated sunlight shading.
     """
 
-    def __init__(self, radius=0.1, body_height=1.0, nose_height=0.3,
-                 fin_height=0.15, fin_thickness=0.02, segments=64):
+    def __init__(
+        self,
+        radius=0.1,
+        body_height=1.0,
+        nose_height=0.3,
+        fin_height=0.15,
+        fin_thickness=0.02,
+        segments=64,
+    ):
         self.radius = radius
         self.body_height = body_height
         self.nose_height = nose_height
@@ -31,7 +38,7 @@ class RocketModel:
             smooth=True,
             drawEdges=False,
             shader="shaded",
-            glOptions="opaque"
+            glOptions="opaque",
         )
 
     # -------------------------------------------------------------
@@ -45,7 +52,9 @@ class RocketModel:
         x_body = self.radius * np.cos(θ_grid)
         y_body = self.radius * np.sin(θ_grid)
         z_body = z_grid
-        body_vertices = np.column_stack((x_body.flatten(), y_body.flatten(), z_body.flatten()))
+        body_vertices = np.column_stack(
+            (x_body.flatten(), y_body.flatten(), z_body.flatten())
+        )
 
         faces = []
         for i in range(seg):
@@ -72,39 +81,47 @@ class RocketModel:
         for angle in np.linspace(0, 2 * np.pi, 4, endpoint=False):
             ca, sa = np.cos(angle), np.sin(angle)
             base1 = np.array([fin_root * ca, fin_root * sa, fin_base_z])
-            base2 = np.array([fin_root * ca, fin_root * sa, fin_base_z + self.fin_height])
-            tip1 = np.array([fin_span * ca, fin_span * sa, fin_base_z + self.fin_height * 0.6])
+            base2 = np.array(
+                [fin_root * ca, fin_root * sa, fin_base_z + self.fin_height]
+            )
+            tip1 = np.array(
+                [fin_span * ca, fin_span * sa, fin_base_z + self.fin_height * 0.6]
+            )
             tip2 = np.array([fin_span * ca, fin_span * sa, fin_base_z])
 
             offset = np.array([-sa, ca, 0]) * self.fin_thickness / 2
-            verts = np.array([
-                base1 + offset,
-                base2 + offset,
-                tip1 + offset,
-                tip2 + offset,
-                base1 - offset,
-                base2 - offset,
-                tip1 - offset,
-                tip2 - offset
-            ])
+            verts = np.array(
+                [
+                    base1 + offset,
+                    base2 + offset,
+                    tip1 + offset,
+                    tip2 + offset,
+                    base1 - offset,
+                    base2 - offset,
+                    tip1 - offset,
+                    tip2 - offset,
+                ]
+            )
             start_index = len(body_vertices) + len(nose_vertices) + len(fin_vertices)
             fin_vertices.extend(verts)
 
             # Box-like fins (12 triangles)
-            fin_faces.extend([
-                [start_index, start_index + 1, start_index + 2],
-                [start_index, start_index + 2, start_index + 3],
-                [start_index + 4, start_index + 5, start_index + 6],
-                [start_index + 4, start_index + 6, start_index + 7],
-                [start_index, start_index + 4, start_index + 5],
-                [start_index, start_index + 1, start_index + 5],
-                [start_index + 1, start_index + 2, start_index + 6],
-                [start_index + 1, start_index + 5, start_index + 6],
-                [start_index + 2, start_index + 3, start_index + 7],
-                [start_index + 2, start_index + 6, start_index + 7],
-                [start_index + 3, start_index + 0, start_index + 4],
-                [start_index + 3, start_index + 7, start_index + 4],
-            ])
+            fin_faces.extend(
+                [
+                    [start_index, start_index + 1, start_index + 2],
+                    [start_index, start_index + 2, start_index + 3],
+                    [start_index + 4, start_index + 5, start_index + 6],
+                    [start_index + 4, start_index + 6, start_index + 7],
+                    [start_index, start_index + 4, start_index + 5],
+                    [start_index, start_index + 1, start_index + 5],
+                    [start_index + 1, start_index + 2, start_index + 6],
+                    [start_index + 1, start_index + 5, start_index + 6],
+                    [start_index + 2, start_index + 3, start_index + 7],
+                    [start_index + 2, start_index + 6, start_index + 7],
+                    [start_index + 3, start_index + 0, start_index + 4],
+                    [start_index + 3, start_index + 7, start_index + 4],
+                ]
+            )
 
         # ---------------- Nozzle ----------------
         nozzle_height = 0.08
@@ -113,14 +130,18 @@ class RocketModel:
         x_noz = self.radius * 0.9 * np.cos(θ_grid)
         y_noz = self.radius * 0.9 * np.sin(θ_grid)
         z_noz = z_grid
-        noz_vertices = np.column_stack((x_noz.flatten(), y_noz.flatten(), z_noz.flatten()))
+        noz_vertices = np.column_stack(
+            (x_noz.flatten(), y_noz.flatten(), z_noz.flatten())
+        )
 
         noz_faces = []
         base_offset = len(body_vertices) + len(nose_vertices) + len(fin_vertices)
         for i in range(seg):
             j = (i + 1) % seg
             noz_faces.append([base_offset + i, base_offset + j, base_offset + i + seg])
-            noz_faces.append([base_offset + j, base_offset + j + seg, base_offset + i + seg])
+            noz_faces.append(
+                [base_offset + j, base_offset + j + seg, base_offset + i + seg]
+            )
 
         # ---------------- Combine All ----------------
         vertices = np.vstack((body_vertices, nose_vertices, fin_vertices, noz_vertices))
@@ -133,8 +154,8 @@ class RocketModel:
         nose_color = np.array([0.9, 0.25, 0.2, 1.0])
         nozzle_color = np.array([0.3, 0.3, 0.3, 1.0])
         colors = np.tile(body_color, (len(faces), 1))
-        colors[int(0.8 * len(faces)):, :] = nose_color
-        colors[-(2 * seg + 48):, :] = nozzle_color
+        colors[int(0.8 * len(faces)) :, :] = nose_color
+        colors[-(2 * seg + 48) :, :] = nozzle_color
 
         return vertices, faces, colors
 

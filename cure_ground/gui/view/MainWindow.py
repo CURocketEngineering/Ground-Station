@@ -1,10 +1,10 @@
-from PyQt6.QtWidgets import QMainWindow, QLabel
-from PyQt6.QtGui import QFontDatabase, QPalette, QBrush, QPixmap, QFont
+from PyQt6.QtWidgets import QMainWindow
+from PyQt6.QtGui import QFontDatabase, QPalette, QBrush, QPixmap
 from PyQt6.QtCore import Qt
 
 from cure_ground.gui.view.Sidebar import Sidebar
 from cure_ground.gui.view.StatusDisplay import StatusDisplay
-from cure_ground.gui.view.OrientationVisual import OrientationView
+
 
 class MainWindow(QMainWindow):
     BASE_WIDTH = 1920
@@ -41,8 +41,11 @@ class MainWindow(QMainWindow):
         try:
             palette = self.palette()
             pixmap = QPixmap(image_path)
-            pixmap = pixmap.scaled(self.size(), Qt.AspectRatioMode.IgnoreAspectRatio,
-                                   Qt.TransformationMode.SmoothTransformation)
+            pixmap = pixmap.scaled(
+                self.size(),
+                Qt.AspectRatioMode.IgnoreAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
             palette.setBrush(QPalette.ColorRole.Window, QBrush(pixmap))
             self.setPalette(palette)
             self.setAutoFillBackground(True)
@@ -78,21 +81,19 @@ class MainWindow(QMainWindow):
         # === Graph Layout ===
         if self.merged_graph:
             self.merged_graph.setGeometry(
-                int(self.width() * 0.65),   # horizontal shift
+                int(self.width() * 0.65),  # horizontal shift
                 int(self.height() * 0.10),  # vertical shift
-                int(self.width() * 0.30),   # width
-                int(self.height() * 0.75)   # height
+                int(self.width() * 0.30),  # width
+                int(self.height() * 0.75),  # height
             )
 
         if self.orientation_visual:
             self.orientation_visual.setGeometry(
-                int(self.width() * 0.30), 
+                int(self.width() * 0.30),
                 int(self.height() * 0.55),
                 int(self.width() * 0.30),
-                int(self.height() * 0.35) 
+                int(self.height() * 0.35),
             )
-
-
 
     # Sidebar & Status access
     def get_sidebar(self):

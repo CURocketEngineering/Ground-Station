@@ -9,4 +9,10 @@ from cure_ground.data_sources.SerialDataSource import SerialDataSource
 from cure_ground.data_sources.DataSource import DataSource
 from cure_ground.data_sources.CSVDataSource import CSVDataSource
 
-__all__ = ['RocketModel', 'StatusModel', 'SerialConnection', 'DataSource', 'CSVDataSource']
+__all__ = [
+    "RocketModel",
+    "StatusModel",
+    "SerialDataSource",
+    "DataSource",
+    "CSVDataSource",
+]

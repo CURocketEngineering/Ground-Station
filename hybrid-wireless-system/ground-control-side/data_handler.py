@@ -1,5 +1,6 @@
 from system_vars import *
 
+
 def animate(i):
     while not data_queue.empty():
         t, thrust = data_queue.get()
@@ -17,14 +18,18 @@ def animate(i):
     ax.legend(loc="upper left")
     ax.grid(True)
 
+
 def serial_thread():
     try:
-        with serial.Serial('YOUR_SERIAL_PORT', 9600, timeout=1) as ser, open(LOG_FILE, "w") as log:
+        with (
+            serial.Serial("YOUR_SERIAL_PORT", 9600, timeout=1) as ser,
+            open(LOG_FILE, "w") as log,
+        ):
             while True:
                 # 1. Read from serial and log it
                 line = ser.readline().decode("utf-8").strip()
                 if line:
-                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                     log_entry = f"\n{timestamp} | DATA_RECV | {line}"
                     print(log_entry)
                     log.write(log_entry + "\n")
@@ -44,9 +49,8 @@ def serial_thread():
 
     except serial.SerialException as e:
         print(f"[ERROR] Serial error: {e}")
-        
+
+
 def serial_thread_start():
     serial_thread_instance = threading.Thread(target=serial_thread, daemon=True)
     serial_thread_instance.start()
-
-    

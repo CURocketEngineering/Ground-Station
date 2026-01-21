@@ -1,8 +1,16 @@
-from PyQt6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QComboBox, QLabel, QSizePolicy
+from PyQt6.QtWidgets import (
+    QWidget,
+    QPushButton,
+    QVBoxLayout,
+    QComboBox,
+    QLabel,
+    QSizePolicy,
+)
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt
 
 from cure_ground.gui.view.Styles import BUTTON_STYLE, COMBO_BOX_STYLE, SIDEBAR_STYLE
+
 
 class Sidebar(QWidget):
     def __init__(self, parent=None, font_family="Arial"):
@@ -11,7 +19,7 @@ class Sidebar(QWidget):
         self.setup_ui()
 
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        
+
     def setup_ui(self):
         self.setGeometry(75, 80, 300, 925)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
@@ -96,7 +104,7 @@ class Sidebar(QWidget):
 
     def on_data_source_changed(self, source_name):
         source_lower = source_name.lower()
-        
+
         if source_lower == "select":
             self.port_dropdown.hide()
             self.port_label.hide()
@@ -133,13 +141,13 @@ class Sidebar(QWidget):
 
     def get_data_source_combo(self):
         return self.data_source_combo
-        
+
     def get_port_dropdown(self):
         return self.port_dropdown
-        
+
     def get_refresh_button(self):
         return self.refresh_button
-        
+
     def get_connect_button(self):
         return self.connect_button
 

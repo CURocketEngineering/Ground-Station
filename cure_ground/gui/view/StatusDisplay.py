@@ -2,6 +2,7 @@ from PyQt6.QtWidgets import QLabel, QWidget
 from PyQt6.QtGui import QFont
 from cure_ground.gui.view.Styles import get_text_style
 
+
 class StatusDisplay(QWidget):
     def __init__(self, parent, font_family):
         super().__init__(parent)

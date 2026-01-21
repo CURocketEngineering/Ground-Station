@@ -5,7 +5,6 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.subplots as sp
 import questionary
-from core.functions.plotting.basic_suite_plotly import plot_flight_data
 from core.protocols.data_names.data_name_loader import (
     get_list_of_available_data_name_configs,
     load_data_name_enum,
@@ -31,7 +30,9 @@ LAUNCH_START_TIMESTAMP = 1550000
 
 def plot_selected_ids(csv_path, output_dir):
     df = pd.read_csv(csv_path, header=None)
-    df = df[df[CSV_TS_COLUMN] >= LAUNCH_START_TIMESTAMP].copy()  # time filter, starts at 1550000ms
+    df = df[
+        df[CSV_TS_COLUMN] >= LAUNCH_START_TIMESTAMP
+    ].copy()  # time filter, starts at 1550000ms
 
     # "what data do you want?"
     df_alt = df[df[CSV_ID_COLUMN] == 8].copy()
@@ -57,7 +58,9 @@ def plot_selected_ids(csv_path, output_dir):
     df_accel_pivot.dropna(subset=["ax", "ay", "az"], inplace=True)
     # Calculate magnitude
     df_accel_pivot["total_accel"] = np.sqrt(
-        df_accel_pivot["ax"] ** 2 + df_accel_pivot["ay"] ** 2 + df_accel_pivot["az"] ** 2
+        df_accel_pivot["ax"] ** 2
+        + df_accel_pivot["ay"] ** 2
+        + df_accel_pivot["az"] ** 2
     )
     print("Total acceleration calculated.")
     # --- End Total Acceleration Calculation ---
@@ -65,13 +68,21 @@ def plot_selected_ids(csv_path, output_dir):
     # you need these so you can align your y=0 in the future
     y_min = min(0, df_alt[CSV_DATA_COLUMN].min())
     y_max = max(0, df_alt[CSV_DATA_COLUMN].max())
-    y2_min = min(0, df_fin_angle[CSV_DATA_COLUMN].min(), df_accel_pivot["total_accel"].min())
-    y2_max = max(0, df_fin_angle[CSV_DATA_COLUMN].max(), df_accel_pivot["total_accel"].max())
+    y2_min = min(
+        0, df_fin_angle[CSV_DATA_COLUMN].min(), df_accel_pivot["total_accel"].min()
+    )
+    y2_max = max(
+        0, df_fin_angle[CSV_DATA_COLUMN].max(), df_accel_pivot["total_accel"].max()
+    )
 
     # time from ms -> s
     df_alt["time_sec"] = (df_alt[CSV_TS_COLUMN] - actual_start_time) / 1000.0
-    df_fin_angle["time_sec"] = (df_fin_angle[CSV_TS_COLUMN] - actual_start_time) / 1000.0
-    df_state_change["time_sec"] = (df_state_change[CSV_TS_COLUMN] - actual_start_time) / 1000.0
+    df_fin_angle["time_sec"] = (
+        df_fin_angle[CSV_TS_COLUMN] - actual_start_time
+    ) / 1000.0
+    df_state_change["time_sec"] = (
+        df_state_change[CSV_TS_COLUMN] - actual_start_time
+    ) / 1000.0
     df_accel_pivot["time_sec"] = (df_accel_pivot.index - actual_start_time) / 1000.0
 
     fig = sp.make_subplots(
@@ -114,7 +125,9 @@ def plot_selected_ids(csv_path, output_dir):
     for index, row in tqdm(df_state_change.iterrows()):
         ts_sec = row["time_sec"]
         state_id = int(row[CSV_DATA_COLUMN])
-        state_name = STATE_NAMES.get(state_id, f"State {state_id}")  # get from data structure
+        state_name = STATE_NAMES.get(
+            state_id, f"State {state_id}"
+        )  # get from data structure
 
         # add the vertical lines for state changes, and their labels
         fig.add_shape(
@@ -206,7 +219,7 @@ def main():
     ).ask()
 
     # Load the data names
-    data_names = load_data_name_enum(selected_version)
+    load_data_name_enum(selected_version)
     print(f"Loaded data names for version {selected_version}:")
 
     selected_csv_path = "cli/stream-18.csv"

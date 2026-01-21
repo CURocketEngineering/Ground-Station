@@ -3,9 +3,6 @@ CLI interface for MARTHA ground station
 """
 
 import sys
-from datetime import datetime
-from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -29,6 +26,7 @@ def validate_port(port: str) -> str:
         if not port.startswith("/dev/"):
             port = f"/dev/{port}"
     return port
+
 
 @app.command()
 def gui():
@@ -82,45 +80,6 @@ def versions(
             console.print(table)
     else:
         console.print(f"[red]Failed to get version information: {error}[/red]")
-        raise typer.Exit(1)
-
-
-@app.command()
-def flash_dump(
-    port: str = typer.Argument(..., help="Serial port (e.g., COM3 or ttyACM0)"),
-    output: Path = typer.Option(
-        None, help="Output CSV file path (default: flash_dump_YYYY-MM-DD_HH-MM-SS.csv)"
-    ),
-    baudrate: int = typer.Option(115200, help="Serial baudrate"),
-    timeout: float = typer.Option(10.0, help="Response timeout in seconds"),
-    generate_plots: bool = typer.Option(True, help="Generate plots from the data"),
-):
-    """Download and save flash memory contents"""
-    port = validate_port(port)
-
-    # Generate default output path if none provided
-    if output is None:
-        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        output = Path(f"flash_dump_{timestamp}.csv")
-
-    with console.status("Downloading flash memory contents..."):
-        success, error = dump_flash(port, str(output), baudrate, timeout)
-
-    if success:
-        console.print(f"[green]Successfully saved flash dump to {output}[/green]")
-
-        if generate_plots:
-            with console.status("Generating plots..."):
-                plot_success, plot_error = generate_graphs(str(output))
-
-            if plot_success:
-                console.print(
-                    f"[green]Successfully generated plots in {output.with_suffix('')}/graphs/[/green]"
-                )
-            else:
-                console.print(f"[red]Failed to generate plots: {plot_error}[/red]")
-    else:
-        console.print(f"[red]Failed to dump flash memory: {error}[/red]")
         raise typer.Exit(1)
 
 

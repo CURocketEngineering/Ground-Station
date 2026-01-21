@@ -1,11 +1,6 @@
-import argparse
-
 # For visulazing binary data as text
-import binascii
-import datetime
 import struct
 import time
-from enum import Enum
 
 import pandas as pd
 import serial

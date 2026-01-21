@@ -19,7 +19,6 @@ def plot_stacked_summary_figure(
     key_state_event_labels: dict,
     data_names: DataNames,
 ) -> None:
-
     # ── 1. Pre-compute total acceleration ───────────────────────────────────
     accel_cols = {
         data_names["ACCELEROMETER_X"].name,
@@ -115,14 +114,23 @@ def plot_stacked_summary_figure(
     apogee_detection_delay = float("inf")
     if data_names["STATE_CHANGE"].name in launch_df.columns:
         state_changes = launch_df[data_names["STATE_CHANGE"].name].dropna()
-        color_cycle = ["red", "lime", "blue", "cyan", "magenta", "yellow", "white", "orange"]
+        color_cycle = [
+            "red",
+            "lime",
+            "blue",
+            "cyan",
+            "magenta",
+            "yellow",
+            "white",
+            "orange",
+        ]
         for i, (x_pos, state_val) in enumerate(state_changes.items()):
             color = color_cycle[i % len(color_cycle)]
 
             # Label lookup
             try:
                 label = states.get_by_id(state_val).name
-            except Exception:
+            except ValueError:
                 label = f"State {state_val}"
 
             anno_text = key_state_event_labels.get(state_val, label)
@@ -132,16 +140,23 @@ def plot_stacked_summary_figure(
                 # x_pos - max altitude index
 
                 # Get the max altitude between launch and the x_pos
-                max_altitude_idx = launch_df[data_names["ALTITUDE"].name].loc[:x_pos].idxmax()
-
-                apogee_detection_delay = pd.to_numeric(x_pos, errors="coerce") - pd.to_numeric(
-                    max_altitude_idx, errors="coerce"
+                max_altitude_idx = (
+                    launch_df[data_names["ALTITUDE"].name].loc[:x_pos].idxmax()
                 )
+
+                apogee_detection_delay = pd.to_numeric(
+                    x_pos, errors="coerce"
+                ) - pd.to_numeric(max_altitude_idx, errors="coerce")
                 apogee_detection_delay = float(apogee_detection_delay)
 
             # Draw the vertical line through all subplots
             fig.add_vline(
-                x=x_pos, line_width=2, line_dash="dash", line_color=color, row="all", col=1
+                x=x_pos,
+                line_width=2,
+                line_dash="dash",
+                line_color=color,
+                row="all",
+                col=1,
             )
 
             # Add the annotation once at the top

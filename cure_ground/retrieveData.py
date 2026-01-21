@@ -3,12 +3,10 @@ This Class will retrieve flight data and from our csv file and print it
 according to the time delta in the file.
 """
 
-import csv
 import struct
 import time as tm
 
 import pandas as pd
-import psutil
 import serial
 
 
@@ -112,7 +110,6 @@ class RetrieveData:
         ser = serial.Serial("placeholder", baudrate=9600, timeout=1)
 
         for i in range(len(time)):
-
             print("Time: ", time[i])
 
             print("AccelX: ", accelX[i])

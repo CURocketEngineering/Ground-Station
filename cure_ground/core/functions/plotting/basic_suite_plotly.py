@@ -1,9 +1,10 @@
 import os
 
-import pandas as pd
 from tqdm import tqdm
 
-from cure_ground.core.functions.plotting.stacked_summary_plot import plot_stacked_summary_figure
+from cure_ground.core.functions.plotting.stacked_summary_plot import (
+    plot_stacked_summary_figure,
+)
 
 # Replace with actual paths/enums if needed
 from cure_ground.core.protocols.data_names.data_name_loader import load_data_name_enum
@@ -15,7 +16,6 @@ from .common import (
     get_launch_time,
     load_csv,
     plot_column_full_and_launch_window,
-    plot_summary_figure,
     shift_timestamp_to_launch,
 )
 
