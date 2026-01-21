@@ -1,12 +1,7 @@
 import serial
-import threading
-import time
 import queue
 from datetime import datetime
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
 import matplotlib.style as style
-import sys
 import tkinter as tk
 from pathlib import Path
 from PIL import Image, ImageTk

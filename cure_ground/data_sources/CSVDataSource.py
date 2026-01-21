@@ -1,8 +1,7 @@
 import csv
 import time
-import pandas as pd
 import os
-from typing import Dict, Optional, List
+from typing import Dict, Optional
 from cure_ground.data_sources.DataSource import DataSource
 from cure_ground.data_sources.LaunchDetector import LaunchDetector
 
@@ -59,7 +58,7 @@ class CSVDataSource(DataSource):
             if self.processed_rows:
                 first_ts = self.processed_rows[0]['original_timestamp']
                 last_ts = self.processed_rows[-1]['original_timestamp']
-                total_duration = (last_ts - first_ts) / 1000.0
+                (last_ts - first_ts) / 1000.0
             
             return True
             

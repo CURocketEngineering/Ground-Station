@@ -13,7 +13,7 @@ def main():
     view = MainWindow()
     
     # Create controller and connect it to the view
-    controller = DashboardController(view)
+    DashboardController(view)
     
     # Show the window
     view.show()

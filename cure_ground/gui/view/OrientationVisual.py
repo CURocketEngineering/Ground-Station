@@ -92,7 +92,10 @@ class OrientationView(QWidget):
         timestamp = float(data.get('TIMESTAMP', 0))
 
         # Run Kalman filter step
-        roll, pitch, yaw = self.kf.step(accel, gyro, timestamp)
+        result = self.kf.step(accel, gyro, timestamp)
+        if result is None:
+            return
+        roll, pitch, yaw = result
 
         # Update target angles for smooth animation
         self.target_pitch = pitch

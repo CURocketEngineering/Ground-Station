@@ -190,7 +190,7 @@ def plot_summary_figure(
             # Attempt to retrieve the state's name from the states enum
             try:
                 label = states(val).name
-            except:
+            except ValueError:
                 label = f"State {val}"
 
             annotation_text = f"State: {label} ({val})"

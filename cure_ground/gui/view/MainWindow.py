@@ -1,10 +1,9 @@
-from PyQt6.QtWidgets import QMainWindow, QLabel
-from PyQt6.QtGui import QFontDatabase, QPalette, QBrush, QPixmap, QFont
+from PyQt6.QtWidgets import QMainWindow
+from PyQt6.QtGui import QFontDatabase, QPalette, QBrush, QPixmap
 from PyQt6.QtCore import Qt
 
 from cure_ground.gui.view.Sidebar import Sidebar
 from cure_ground.gui.view.StatusDisplay import StatusDisplay
-from cure_ground.gui.view.OrientationVisual import OrientationView
 
 class MainWindow(QMainWindow):
     BASE_WIDTH = 1920

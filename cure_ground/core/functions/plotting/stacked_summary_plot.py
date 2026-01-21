@@ -122,7 +122,7 @@ def plot_stacked_summary_figure(
             # Label lookup
             try:
                 label = states.get_by_id(state_val).name
-            except Exception:
+            except ValueError:
                 label = f"State {state_val}"
 
             anno_text = key_state_event_labels.get(state_val, label)

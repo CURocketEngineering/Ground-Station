@@ -52,6 +52,19 @@ cure-ground --help
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
+### GUI
+
+To run the telemetry GUI, you'll first need to install some assets.
+
+Download everything in [this assets folder](https://clemson.sharepoint.com/:f:/r/teams/ClemsonUniversityRocketEngineering/Shared%20Documents/CURE/Engineering%20Division/Subteams/Software/Ground-Station-Assets?csf=1&web=1&e=NV0l7o) and place it in `cure_ground/gui/resources`
+
+You can then the run the GUI with:
+
+```bash
+cure-ground gui
+```
+
+
 ### Post Flight
 
 Run the post flight CLI flow to get data off of the connect flight computer

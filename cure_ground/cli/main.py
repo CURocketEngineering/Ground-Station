@@ -5,7 +5,6 @@ CLI interface for MARTHA ground station
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console

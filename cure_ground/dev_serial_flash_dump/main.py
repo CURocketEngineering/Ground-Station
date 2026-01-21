@@ -1,7 +1,6 @@
 import argparse
 
 # For visulazing binary data as text
-import binascii
 import datetime
 import struct
 import time

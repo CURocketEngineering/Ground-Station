@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
-from typing import Tuple, List, Optional
-import os
+from typing import Tuple
 
 class LaunchDetector:
     def __init__(self, threshold_g: float = 2.0, window_size: int = 5, pre_launch_seconds: int = 10, use_all_post_launch: bool = True):
@@ -162,8 +161,8 @@ class LaunchDetector:
             mask = (timestamp_data >= pre_launch_bound) & (timestamp_data <= post_launch_bound)
             trimmed_df = df[mask].copy()
             
-            actual_pre = (launch_timestamp - timestamp_data[mask].min()) / 1000.0
-            actual_post = (timestamp_data[mask].max() - launch_timestamp) / 1000.0
+            (launch_timestamp - timestamp_data[mask].min()) / 1000.0
+            (timestamp_data[mask].max() - launch_timestamp) / 1000.0
             
         else:
             # Fallback: use index-based trimming

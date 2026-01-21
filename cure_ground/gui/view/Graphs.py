@@ -36,11 +36,8 @@ class BaseGraph(QWidget):
 
     def clear_graph(self):
         """Clears all plotted data from the graph."""
-        try:
-            for line in self.lines:
-                line.clear()
-        except:
-            pass
+        for line in self.lines:
+            line.clear()
 
     def update_graph(self):
         if self.model is None:

@@ -1,4 +1,3 @@
-import struct
 import time
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QMessageBox
@@ -77,6 +76,7 @@ class DashboardController:
                 self.current_data_source = DataSourceFactory.create_data_source(
                     'csv', csv_file_path=self.csv_file_path
                 )
+
                 if not self.current_data_source.connect():
                     QMessageBox.warning(self.view, "Connection Error",
                                         f"Failed to connect to CSV file: {self.csv_file_path}")
@@ -212,6 +212,10 @@ class DashboardController:
             QMessageBox.information(self.view, "Not Connected",
                                     "Please connect to a data source first.")
             return
+        if self.current_data_source is None:
+            QMessageBox.information(self.view, "No Data Source",
+                                    "No data source is currently connected. We need a Serial connection to clear the PLM.", QMessageBox.StandardButton.Ok)
+            return
         if hasattr(self.current_data_source, 'send_command'):
             self.current_data_source.send_command("clear_plm")
             QMessageBox.information(self.view, "Clear PLM",
@@ -271,12 +275,9 @@ class DashboardController:
         sidebar.update_connect_button_text("Connect")
 
     def clear_graphs(self):
-        if self.altitude_graph:
-            self.altitude_graph.line.clear()
-        if self.accelerometer_graph:
-            self.accelerometer_graph.line_x.clear()
-            self.accelerometer_graph.line_y.clear()
-            self.accelerometer_graph.line_z.clear()
+        # Clear merged graph lines (new graph implementation)
+        if self.merged_graph:
+            self.merged_graph.clear_graph()
 
         # Also clear the model's stored data
         self.model.clear_graph_data()

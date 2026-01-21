@@ -5,7 +5,6 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.subplots as sp
 import questionary
-from core.functions.plotting.basic_suite_plotly import plot_flight_data
 from core.protocols.data_names.data_name_loader import (
     get_list_of_available_data_name_configs,
     load_data_name_enum,
@@ -206,7 +205,7 @@ def main():
     ).ask()
 
     # Load the data names
-    data_names = load_data_name_enum(selected_version)
+    load_data_name_enum(selected_version)
     print(f"Loaded data names for version {selected_version}:")
 
     selected_csv_path = "cli/stream-18.csv"

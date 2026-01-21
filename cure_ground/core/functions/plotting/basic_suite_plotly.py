@@ -1,6 +1,5 @@
 import os
 
-import pandas as pd
 from tqdm import tqdm
 
 from cure_ground.core.functions.plotting.stacked_summary_plot import plot_stacked_summary_figure
@@ -15,7 +14,6 @@ from .common import (
     get_launch_time,
     load_csv,
     plot_column_full_and_launch_window,
-    plot_summary_figure,
     shift_timestamp_to_launch,
 )
 

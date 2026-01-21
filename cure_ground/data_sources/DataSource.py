@@ -23,6 +23,10 @@ class DataSource(ABC):
     def is_connected(self) -> bool:
         # Check if connected to data source
         pass
+
+    def send_command(self, command: str) -> None:
+        # Send a command to the data source
+        raise NotImplementedError("send_command not implemented for this data source")
     
     def get_type(self) -> str:
         # Return the data source type name

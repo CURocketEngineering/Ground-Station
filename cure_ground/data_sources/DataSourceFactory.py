@@ -1,6 +1,6 @@
 # data_sources/DataSourceFactory.py
 import time
-from typing import Dict, Optional, Type, List
+from typing import Dict, Type, List
 from .DataSource import DataSource
 from .SerialDataSource import SerialDataSource
 from .CSVDataSource import CSVDataSource
@@ -17,7 +17,7 @@ class DataSourceFactory:
     }
     
     @classmethod
-    def create_data_source(cls, source_type: str, **kwargs) -> Optional[DataSource]:
+    def create_data_source(cls, source_type: str, **kwargs) -> DataSource:
         # Create a data source of the specified type
         source_class = cls._data_sources.get(source_type.lower())
         if not source_class:
@@ -118,7 +118,7 @@ class DataSourceFactory:
         return radio_ports
     
     @classmethod
-    def create_data_source_with_port(cls, source_type: str, port: str = None, **kwargs) -> DataSource:
+    def create_data_source_with_port(cls, source_type: str, port: str | None = None, **kwargs) -> DataSource:
         # Create a data source and optionally connect to a specific port
         data_source = cls.create_data_source(source_type, **kwargs)
         

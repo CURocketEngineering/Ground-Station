@@ -75,8 +75,8 @@ class RadioDataSource(DataSource):
             self._connected = True
             print(f"RadioDataSource: Connected to {self.port} at {self.baudrate} baud")
             return True
-        except serial.SerialException as e:
-            print(f"RadioDataSource: Failed to connect to {self.port}: {e}")
+        except serial.SerialException:
+            # print(f"RadioDataSource: Failed to connect to {self.port}: {e}")
             self._connected = False
             return False
     

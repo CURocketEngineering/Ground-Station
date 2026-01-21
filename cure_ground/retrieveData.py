@@ -3,12 +3,10 @@ This Class will retrieve flight data and from our csv file and print it
 according to the time delta in the file.
 """
 
-import csv
 import struct
 import time as tm
 
 import pandas as pd
-import psutil
 import serial
 
 

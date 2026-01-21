@@ -8,7 +8,6 @@ import pandas as pd
 import questionary
 import serial
 import serial.tools.list_ports
-from tqdm import tqdm
 
 from cure_ground.core.functions.flash_dump import flash_dump as flash_dump
 from cure_ground.core.functions.plotting.basic_suite_plotly import plot_flight_data
