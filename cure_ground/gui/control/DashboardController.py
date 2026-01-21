@@ -38,7 +38,9 @@ class DashboardController:
     # --------------------- SETUP ---------------------
     def setup_connections(self):
         sidebar = self.view.get_sidebar()
-        sidebar.get_data_source_combo().currentTextChanged.connect(self.on_data_source_changed)
+        sidebar.get_data_source_combo().currentTextChanged.connect(
+            self.on_data_source_changed
+        )
         sidebar.get_refresh_button().clicked.connect(self.refresh_ports)
         sidebar.get_connect_button().clicked.connect(self.toggle_connection_status)
         sidebar.get_live_update_button().clicked.connect(self.toggle_streaming)
@@ -74,32 +76,42 @@ class DashboardController:
 
             if source_type == "csv":
                 self.current_data_source = DataSourceFactory.create_data_source(
-                    'csv', csv_file_path=self.csv_file_path
+                    "csv", csv_file_path=self.csv_file_path
                 )
 
                 if not self.current_data_source.connect():
-                    QMessageBox.warning(self.view, "Connection Error",
-                                        f"Failed to connect to CSV file: {self.csv_file_path}")
+                    QMessageBox.warning(
+                        self.view,
+                        "Connection Error",
+                        f"Failed to connect to CSV file: {self.csv_file_path}",
+                    )
                     return False
 
             elif source_type == "radio":
                 selected_port = self.get_selected_port()
                 if selected_port == "No ports available":
-                    QMessageBox.warning(self.view, "Connection Error",
-                                        "No COM ports available. Please check your connections.")
+                    QMessageBox.warning(
+                        self.view,
+                        "Connection Error",
+                        "No COM ports available. Please check your connections.",
+                    )
                     return False
 
                 self.current_data_source = DataSourceFactory.create_data_source(
-                    'radio', port=selected_port
+                    "radio", port=selected_port
                 )
 
                 if not self.current_data_source.connect():
-                    QMessageBox.warning(self.view, "Connection Error",
-                                        f"Failed to connect to {selected_port}")
+                    QMessageBox.warning(
+                        self.view,
+                        "Connection Error",
+                        f"Failed to connect to {selected_port}",
+                    )
                     return False
             else:
-                QMessageBox.warning(self.view, "Connection Error",
-                                    f"Unknown data source: {source_type}")
+                QMessageBox.warning(
+                    self.view, "Connection Error", f"Unknown data source: {source_type}"
+                )
                 return False
 
             self.model.set_data_source(self.current_data_source)
@@ -112,8 +124,9 @@ class DashboardController:
 
         except Exception as e:
             print(f"Connection error: {e}")
-            QMessageBox.critical(self.view, "Connection Error",
-                                 f"Failed to connect: {str(e)}")
+            QMessageBox.critical(
+                self.view, "Connection Error", f"Failed to connect: {str(e)}"
+            )
             return False
 
     def disconnect(self):
@@ -139,8 +152,9 @@ class DashboardController:
     # --------------------- STREAMING ---------------------
     def toggle_streaming(self):
         if not self.connected:
-            QMessageBox.information(self.view, "Not Connected",
-                                    "Please connect to a data source first.")
+            QMessageBox.information(
+                self.view, "Not Connected", "Please connect to a data source first."
+            )
             return
 
         sidebar = self.view.get_sidebar()
@@ -182,7 +196,6 @@ class DashboardController:
         # Force layout refresh
         self.view.resizeEvent(None)
 
-
     # --------------------- STATUS UPDATES ---------------------
     def update_status(self):
         if not self.connected or not self.current_data_source:
@@ -192,9 +205,9 @@ class DashboardController:
             status_data = self.model.get_all_data()
             source_type = self.get_current_data_source_type()
 
-            if source_type == 'csv':
+            if source_type == "csv":
                 formatter = self.text_formatter_csv
-            elif source_type == 'radio':
+            elif source_type == "radio":
                 formatter = self.text_formatter_radio
             else:
                 formatter = self.text_formatter
@@ -209,21 +222,33 @@ class DashboardController:
     # --------------------- HELPERS ---------------------
     def clear_plm(self):
         if not self.connected:
-            QMessageBox.information(self.view, "Not Connected",
-                                    "Please connect to a data source first.")
+            QMessageBox.information(
+                self.view, "Not Connected", "Please connect to a data source first."
+            )
             return
         if self.current_data_source is None:
-            QMessageBox.information(self.view, "No Data Source",
-                                    "No data source is currently connected. We need a Serial connection to clear the PLM.", QMessageBox.StandardButton.Ok)
+            QMessageBox.information(
+                self.view,
+                "No Data Source",
+                "No data source is currently connected. We need a Serial connection to clear the PLM.",
+                QMessageBox.StandardButton.Ok,
+            )
             return
-        if hasattr(self.current_data_source, 'send_command'):
+        if hasattr(self.current_data_source, "send_command"):
             self.current_data_source.send_command("clear_plm")
-            QMessageBox.information(self.view, "Clear PLM",
-                                    "Please reboot the board", QMessageBox.StandardButton.Ok)
+            QMessageBox.information(
+                self.view,
+                "Clear PLM",
+                "Please reboot the board",
+                QMessageBox.StandardButton.Ok,
+            )
         else:
-            QMessageBox.information(self.view, "Not Supported",
-                                    "Clear PLM only works with serial connections",
-                                    QMessageBox.StandardButton.Ok)
+            QMessageBox.information(
+                self.view,
+                "Not Supported",
+                "Clear PLM only works with serial connections",
+                QMessageBox.StandardButton.Ok,
+            )
 
     def get_current_data_source_type(self):
         sidebar = self.view.get_sidebar()
@@ -232,10 +257,11 @@ class DashboardController:
     def get_selected_port(self):
         sidebar = self.view.get_sidebar()
         port_text = sidebar.get_port_dropdown().currentText()
-        return port_text.split(' (')[0] if ' (' in port_text else port_text
+        return port_text.split(" (")[0] if " (" in port_text else port_text
 
     def refresh_ports(self):
         from cure_ground.data_sources import SerialDataSource
+
         temp_source = SerialDataSource()
         all_ports = temp_source.get_available_ports()
 

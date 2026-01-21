@@ -3,6 +3,7 @@ from PyQt6.QtCore import QTimer
 from PyQt6.QtGui import QFont
 import pyqtgraph as pg
 
+
 class BaseGraph(QWidget):
     def __init__(self, title: str, y_label: str):
         super().__init__()
@@ -10,11 +11,13 @@ class BaseGraph(QWidget):
 
         self.plot_widget = pg.PlotWidget()
         self.plot_widget.setTitle(title)
-        self.plot_widget.setLabel('left', y_label)
-        self.plot_widget.setLabel('bottom', 'Time (s)')
+        self.plot_widget.setLabel("left", y_label)
+        self.plot_widget.setLabel("bottom", "Time (s)")
 
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self.plot_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.plot_widget.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+        )
 
         self.layout().addWidget(self.plot_widget)
 
@@ -48,6 +51,7 @@ class BaseGraph(QWidget):
         """Override in subclasses"""
         pass
 
+
 class MergedGraph(BaseGraph):
     def __init__(self):
         super().__init__("Flight Data", "Value")
@@ -57,7 +61,7 @@ class MergedGraph(BaseGraph):
 
         axis = self.plot_widget.getAxis("left")
         axis.setPen(pg.mkPen(color="k", width=3))
-        axis.setTextPen(pg.mkPen(color="k")) 
+        axis.setTextPen(pg.mkPen(color="k"))
         axis.setStyle(tickFont=pg.QtGui.QFont("Arial", 12, QFont.Weight.Bold))
 
         axis = self.plot_widget.getAxis("bottom")
@@ -79,12 +83,7 @@ class MergedGraph(BaseGraph):
             pen=pg.mkPen(color="b", width=4), name="Accel Z"
         )
 
-        self.lines = [
-            self.alt_line,
-            self.ax_line,
-            self.ay_line,
-            self.az_line
-        ]
+        self.lines = [self.alt_line, self.ax_line, self.ay_line, self.az_line]
 
     def _update_plot_data(self):
         # Get data from model

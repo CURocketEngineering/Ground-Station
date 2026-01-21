@@ -27,6 +27,7 @@ def validate_port(port: str) -> str:
             port = f"/dev/{port}"
     return port
 
+
 @app.command()
 def gui():
     """Launch the GUI application"""

@@ -175,7 +175,9 @@ def main(port, stat_only, all_data):
     df = pd.DataFrame(rows, columns=expected_columns)
 
     # Data name
-    data_name = "flight_data_" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + ".csv"
+    data_name = (
+        "flight_data_" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + ".csv"
+    )
     # 5. Save the data to a CSV file
     df.to_csv(data_name, index=False)
 
@@ -192,9 +194,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Dump the serial flash memory")
     parser.add_argument("port", help="The serial port to connect to")
     # Stat only
-    parser.add_argument("--stat", action="store_true", help="Print the status of the device only")
     parser.add_argument(
-        "-a", "--all", action="store_true", help="Dump all the data, ignoring empty pages"
+        "--stat", action="store_true", help="Print the status of the device only"
+    )
+    parser.add_argument(
+        "-a",
+        "--all",
+        action="store_true",
+        help="Dump all the data, ignoring empty pages",
     )
     args = parser.parse_args()
     main(args.port, args.stat, args.all)

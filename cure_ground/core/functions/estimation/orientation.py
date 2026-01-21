@@ -1,8 +1,10 @@
 """
 Module for determining orientation from acceleration and gyroscopic data.
 """
+
 import numpy as np
 import time
+
 
 class KalmanFilter:
     def __init__(self, Q_angle=0.001, Q_bias=1e-6, R_accel=0.03):
@@ -21,16 +23,14 @@ class KalmanFilter:
         self.R = np.eye(2) * R_accel
 
         # Measurement matrix (only roll, pitch)
-        self.H = np.array([[1,0,0,0,0,0],
-                           [0,1,0,0,0,0]])
-        
-        self.I6 = np.eye(6) # Identity matrix
+        self.H = np.array([[1, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0]])
+
+        self.I6 = np.eye(6)  # Identity matrix
         self.last_time = None
         self.orientation = []  # timestamped log
 
         # Gyro drift mitigation (small leakage to yaw)
         self.yaw_damping = 1e-4
-
 
     def step(self, accel, gyro, timestamp=None):
         # Timestamp logic
@@ -46,9 +46,9 @@ class KalmanFilter:
         # Prediction from gyrometer
         x_pred = self.x.copy()
         x_pred[0:3] += gyro_unbiased * dt
-        
+
         # Slow yaw damping (keeps yaw bounded)
-        x_pred[2] *= (1 - self.yaw_damping * dt)
+        x_pred[2] *= 1 - self.yaw_damping * dt
 
         # Normalize yaw to [-pi, pi]
         x_pred[2] = (x_pred[2] + np.pi) % (2 * np.pi) - np.pi
@@ -61,10 +61,10 @@ class KalmanFilter:
         if norm < 1e-6:
             self.x, self.P = x_pred, P_pred
             return
-        
+
         accel /= norm
-        roll_acc  = np.arctan2(accel[1], accel[2])
-        pitch_acc = np.arctan2(-accel[0], np.sqrt(accel[1]**2 + accel[2]**2))
+        roll_acc = np.arctan2(accel[1], accel[2])
+        pitch_acc = np.arctan2(-accel[0], np.sqrt(accel[1] ** 2 + accel[2] ** 2))
         z = np.array([roll_acc, pitch_acc])
 
         # Innovation
@@ -82,12 +82,9 @@ class KalmanFilter:
 
         # Return roll, pitch, yaw
         return np.degrees(self.x[0:3])
-    
-    
+
     def get_orientation_rad(self):
         return self.x[0:3]
-    
 
     def get_orientation_deg(self):
         return np.degrees(self.x[0:3])
-

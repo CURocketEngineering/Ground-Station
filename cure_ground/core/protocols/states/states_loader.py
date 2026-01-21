@@ -104,7 +104,9 @@ def load_states(version: int) -> States:
     try:
         state_defs = cfg["states"]
     except KeyError as e:
-        raise ValueError(f"Invalid states YAML at {yaml_path}: missing 'states' list") from e
+        raise ValueError(
+            f"Invalid states YAML at {yaml_path}: missing 'states' list"
+        ) from e
 
     return States(state_defs)
 

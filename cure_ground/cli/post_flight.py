@@ -53,7 +53,6 @@ def post_flight_flow():
         df = pd.read_csv(selected_csv_path)
         print(df.head())
     else:
-
         # Ask which COMM / tty port the board is on
         available_ports = serial.tools.list_ports.comports()
         port_options = [port.device for port in available_ports]

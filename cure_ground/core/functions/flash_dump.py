@@ -1,4 +1,3 @@
-
 # For visulazing binary data as text
 import struct
 import time

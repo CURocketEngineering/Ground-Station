@@ -1,5 +1,6 @@
 from cure_ground.core.protocols.data_names.data_name_loader import load_data_name_enum
 
+
 class TextFormatterRadio:
     def __init__(self, protocol_version: int = 3):
         self.data_names = load_data_name_enum(protocol_version)
@@ -10,42 +11,42 @@ class TextFormatterRadio:
         }
 
         self.categories = {
-            'accelerometer': [],
-            'gyroscope': [],
-            'magnetometer': [],
-            'environment': [],
-            'telemetry': []
+            "accelerometer": [],
+            "gyroscope": [],
+            "magnetometer": [],
+            "environment": [],
+            "telemetry": [],
         }
         for item in self.data_names.data_definitions:
-            name = item['name']
+            name = item["name"]
             lname = name.lower()
 
-            if 'accelerometer_' in lname:
-                self.categories['accelerometer'].append(name)
+            if "accelerometer_" in lname:
+                self.categories["accelerometer"].append(name)
 
-            elif 'gyroscope_' in lname:
-                self.categories['gyroscope'].append(name)
+            elif "gyroscope_" in lname:
+                self.categories["gyroscope"].append(name)
 
-            elif 'magnetometer_' in lname:
-                self.categories['magnetometer'].append(name)
+            elif "magnetometer_" in lname:
+                self.categories["magnetometer"].append(name)
 
-            elif lname in ['temperature', 'pressure', 'altitude']:
-                self.categories['environment'].append(name)
+            elif lname in ["temperature", "pressure", "altitude"]:
+                self.categories["environment"].append(name)
 
             else:
-                self.categories['telemetry'].append(name)
+                self.categories["telemetry"].append(name)
 
-        self.categories['packets'] = ['NUM_PACKETS_SENT']
+        self.categories["packets"] = ["NUM_PACKETS_SENT"]
 
     def get_left_column_text(self, status_data):
         parts = []
-        for cat in ['accelerometer', 'gyroscope', 'magnetometer', 'environment']:
+        for cat in ["accelerometer", "gyroscope", "magnetometer", "environment"]:
             parts.append(self._format_category(cat, status_data))
         return "<br><br>".join(parts)
 
     def get_right_column_text(self, status_data):
-        telem = self._format_category('telemetry', status_data)
-        packets = self._format_category('packets', status_data)
+        telem = self._format_category("telemetry", status_data)
+        packets = self._format_category("packets", status_data)
         return telem + "<br><br>" + packets
 
     def _format_category(self, category: str, status_data) -> str:

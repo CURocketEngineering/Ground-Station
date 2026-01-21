@@ -2,7 +2,9 @@ import os
 
 from tqdm import tqdm
 
-from cure_ground.core.functions.plotting.stacked_summary_plot import plot_stacked_summary_figure
+from cure_ground.core.functions.plotting.stacked_summary_plot import (
+    plot_stacked_summary_figure,
+)
 
 # Replace with actual paths/enums if needed
 from cure_ground.core.protocols.data_names.data_name_loader import load_data_name_enum

@@ -5,9 +5,7 @@ import yaml
 
 
 class DataName:
-    def __init__(
-        self, type: str, name: str, unit: str, id: int, data: list = None
-    ):
+    def __init__(self, type: str, name: str, unit: str, id: int, data: list = None):
         self.type = type
         self.name = name
         self.unit = unit
@@ -59,9 +57,7 @@ def load_data_name_enum(version: int) -> DataNames:
     # e.g. 1 -> 01
     version_str = str(version).zfill(2)
 
-    yaml_path = (
-        f"cure_ground/core/protocols/data_names/data_names_v{version_str}.yaml"
-    )
+    yaml_path = f"cure_ground/core/protocols/data_names/data_names_v{version_str}.yaml"
     with open(yaml_path, "r") as file:
         data_definitions = yaml.safe_load(file)["data_names"]
 
@@ -89,9 +85,7 @@ if __name__ == "__main__":
     data_names = load_data_name_enum(3)
     print(data_names.data_definitions)
     print(data_names["ACCELEROMETER_X"].name)
-    print(
-        data_names.get_unit(0)
-    )  # Get the unit associated with the data id of 0
+    print(data_names.get_unit(0))  # Get the unit associated with the data id of 0
 
     print("ACCELEROMETER Data:")
     print(data_names["ACCELEROMETER"].name)

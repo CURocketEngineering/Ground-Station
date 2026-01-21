@@ -110,7 +110,6 @@ class RetrieveData:
         ser = serial.Serial("placeholder", baudrate=9600, timeout=1)
 
         for i in range(len(time)):
-
             print("Time: ", time[i])
 
             print("AccelX: ", accelX[i])

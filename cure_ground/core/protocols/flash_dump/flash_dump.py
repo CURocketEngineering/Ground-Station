@@ -49,7 +49,9 @@ def parse_flash_dump_response(response: bytes) -> FlashDumpResponse:
 
     # Verify we have all the data
     if len(response) < 5 + data_length:
-        raise ValueError(f"Incomplete data: expected {data_length} bytes, got {len(response)-5}")
+        raise ValueError(
+            f"Incomplete data: expected {data_length} bytes, got {len(response) - 5}"
+        )
 
     # Extract flash data
     flash_data = response[5 : 5 + data_length]

@@ -59,37 +59,41 @@ class OrientationView(QWidget):
         self.kf = KalmanFilter()
 
     def _init_sensor_data(self):
-        data = getattr(self.status_model, 'status_data', {})
+        data = getattr(self.status_model, "status_data", {})
 
         # Safely convert any strings to floats
         self.accel = {
-            'x': float(data.get('ACCELEROMETER_X', 0)),
-            'y': float(data.get('ACCELEROMETER_Y', 0)),
-            'z': float(data.get('ACCELEROMETER_Z', 0))
+            "x": float(data.get("ACCELEROMETER_X", 0)),
+            "y": float(data.get("ACCELEROMETER_Y", 0)),
+            "z": float(data.get("ACCELEROMETER_Z", 0)),
         }
         self.gyro = {
-            'x': float(data.get('GYROSCOPE_X', 0)),
-            'y': float(data.get('GYROSCOPE_Y', 0)),
-            'z': float(data.get('GYROSCOPE_Z', 0))
+            "x": float(data.get("GYROSCOPE_X", 0)),
+            "y": float(data.get("GYROSCOPE_Y", 0)),
+            "z": float(data.get("GYROSCOPE_Z", 0)),
         }
-        self.timestamp = float(data.get('TIMESTAMP', 0))
-        
+        self.timestamp = float(data.get("TIMESTAMP", 0))
+
     def _update_orientation(self):
         # Get latest sensor data
-        data = getattr(self.status_model, 'status_data', {})
+        data = getattr(self.status_model, "status_data", {})
 
         # Convert to floats safely
-        accel = np.array([
-            float(data.get('ACCELEROMETER_X', 0)),
-            float(data.get('ACCELEROMETER_Y', 0)),
-            float(data.get('ACCELEROMETER_Z', 0))
-        ])
-        gyro = np.array([
-            float(data.get('GYROSCOPE_X', 0)),
-            float(data.get('GYROSCOPE_Y', 0)),
-            float(data.get('GYROSCOPE_Z', 0))
-        ])
-        timestamp = float(data.get('TIMESTAMP', 0))
+        accel = np.array(
+            [
+                float(data.get("ACCELEROMETER_X", 0)),
+                float(data.get("ACCELEROMETER_Y", 0)),
+                float(data.get("ACCELEROMETER_Z", 0)),
+            ]
+        )
+        gyro = np.array(
+            [
+                float(data.get("GYROSCOPE_X", 0)),
+                float(data.get("GYROSCOPE_Y", 0)),
+                float(data.get("GYROSCOPE_Z", 0)),
+            ]
+        )
+        timestamp = float(data.get("TIMESTAMP", 0))
 
         # Run Kalman filter step
         result = self.kf.step(accel, gyro, timestamp)
@@ -108,12 +112,16 @@ class OrientationView(QWidget):
     # -----------------------------
     def _animate(self):
         # Smooth interpolation
-        self.current_pitch += (self.target_pitch - self.current_pitch) * self.smooth_factor
+        self.current_pitch += (
+            self.target_pitch - self.current_pitch
+        ) * self.smooth_factor
         self.current_yaw += (self.target_yaw - self.current_yaw) * self.smooth_factor
         self.current_roll += (self.target_roll - self.current_roll) * self.smooth_factor
 
         # Apply body-fixed rotation
-        self._apply_rotation_matrix(self.current_pitch, self.current_yaw, self.current_roll)
+        self._apply_rotation_matrix(
+            self.current_pitch, self.current_yaw, self.current_roll
+        )
 
     # -----------------------------
     def _apply_rotation_matrix(self, pitch, yaw, roll):
@@ -121,15 +129,15 @@ class OrientationView(QWidget):
         p, y, r = np.radians([pitch, yaw, roll])
 
         # Rotation matrices (X=pitch, Y=roll, Z=yaw)
-        R_x = np.array([[1, 0, 0],
-                        [0, np.cos(p), -np.sin(p)],
-                        [0, np.sin(p), np.cos(p)]])
-        R_y = np.array([[np.cos(r), 0, np.sin(r)],
-                        [0, 1, 0],
-                        [-np.sin(r), 0, np.cos(r)]])
-        R_z = np.array([[np.cos(y), -np.sin(y), 0],
-                        [np.sin(y), np.cos(y), 0],
-                        [0, 0, 1]])
+        R_x = np.array(
+            [[1, 0, 0], [0, np.cos(p), -np.sin(p)], [0, np.sin(p), np.cos(p)]]
+        )
+        R_y = np.array(
+            [[np.cos(r), 0, np.sin(r)], [0, 1, 0], [-np.sin(r), 0, np.cos(r)]]
+        )
+        R_z = np.array(
+            [[np.cos(y), -np.sin(y), 0], [np.sin(y), np.cos(y), 0], [0, 0, 1]]
+        )
 
         # Body-fixed rotation: R = R_z * R_x * R_y
         R = R_z @ R_x @ R_y
