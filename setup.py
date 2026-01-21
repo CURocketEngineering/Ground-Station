@@ -5,6 +5,10 @@ setup(
     version="0.1.0",
     packages=find_packages(),
     install_requires=[
+        "numpy>=1.23.0",
+        "psutil>=5.9.0",
+        "PyOpenGL>=3.1.7",
+        "pyqt6",
         "typer>=0.9.0",
         "rich>=13.0.0",
         "pyserial>=3.5",
@@ -15,6 +19,7 @@ setup(
         "questionary",
         "plotly",
         "pyyaml",
+        "pyqtgraph",
     ],
     entry_points={
         "console_scripts": [
@@ -24,7 +29,7 @@ setup(
     author="Clemson University Rocket Engineering",
     author_email="",
     description="CURE Ground Station Software",
-    long_description=open("README.md").read(),
+    long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/CURocketEngineering/Ground-Station",
     classifiers=[

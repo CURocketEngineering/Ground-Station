@@ -14,6 +14,7 @@ from rich.table import Table
 from cure_ground.cli.post_flight import post_flight_flow
 from cure_ground.core.functions.ping import ping_device
 from cure_ground.core.functions.versions import get_versions
+from cure_ground.gui.main import main as launch_gui
 
 app = typer.Typer(help="Ground Station CLI")
 console = Console()
@@ -28,6 +29,11 @@ def validate_port(port: str) -> str:
         if not port.startswith("/dev/"):
             port = f"/dev/{port}"
     return port
+
+@app.command()
+def gui():
+    """Launch the GUI application"""
+    launch_gui()
 
 
 @app.command()

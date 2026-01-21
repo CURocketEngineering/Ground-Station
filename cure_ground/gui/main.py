@@ -1,8 +1,10 @@
 import sys
+
 from PyQt6.QtWidgets import QApplication
 
-from view.MainWindow import MainWindow
-from control.DashboardController import DashboardController
+
+from cure_ground.gui.view.MainWindow import MainWindow
+from cure_ground.gui.control.DashboardController import DashboardController
 
 def main():
     app = QApplication(sys.argv)
