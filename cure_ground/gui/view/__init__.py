@@ -23,5 +23,7 @@ __all__ = [
     'SIDEBAR_STYLE',
     'get_text_style',
     'TextFormatter',
-    'TextFormatterCSV'
+    'TextFormatterCSV',
+    'MergedGraph',
+    'OrientationView',
 ]

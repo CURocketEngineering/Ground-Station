@@ -123,9 +123,12 @@ class StatusModel:
             for key in keys:
                 if key in data and data[key] not in ['N/A', '', None]:
                     try:
-                        if axis == 'x': ax = float(data[key])
-                        elif axis == 'y': ay = float(data[key])
-                        elif axis == 'z': az = float(data[key])
+                        if axis == 'x': 
+                            ax = float(data[key])
+                        elif axis == 'y': 
+                            ay = float(data[key])
+                        elif axis == 'z': 
+                            az = float(data[key])
                         break
                     except (ValueError, TypeError):
                         continue

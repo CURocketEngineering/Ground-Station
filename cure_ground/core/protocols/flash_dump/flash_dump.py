@@ -104,7 +104,7 @@ def parse_flash_data(data: bytes) -> List[dict]:
         name, value_type = DATA_TYPES[data_type]
         value_bytes = block[1:5]
 
-        if value_type == float:
+        if value_type is float:
             value = struct.unpack("<f", value_bytes)[0]
         else:  # uint32
             value = struct.unpack("<I", value_bytes)[0]
