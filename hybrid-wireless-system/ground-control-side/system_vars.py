@@ -18,8 +18,8 @@ import numpy as np
 
 
 # Serial config
-SERIAL_PORT = "COM18"  # Change to your port
-BAUD_RATE = 115200
+ser = serial.Serial('YOUR_SERIAL_PORT', 9600, timeout=1)
+print('Listening...')
 
 # Logging
 LOG_FILE = f"logs/hybrid_test_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"

@@ -2,11 +2,13 @@ from cure_ground.core.protocols.data_names.data_name_loader import load_data_nam
 
 class TextFormatterRadio:
     def __init__(self, protocol_version: int = 3):
-        # Load the data names YAML for the radio protocol
         self.data_names = load_data_name_enum(protocol_version)
-        
-        # Organize data by "category" for display purposes
-        # For example: accelerometer, gyroscope, magnetometer, environment, telemetry
+
+        self.units = {
+            item["name"]: item.get("unit", "")
+            for item in self.data_names.data_definitions
+        }
+
         self.categories = {
             'accelerometer': [],
             'gyroscope': [],
@@ -14,35 +16,48 @@ class TextFormatterRadio:
             'environment': [],
             'telemetry': []
         }
-        
         for item in self.data_names.data_definitions:
             name = item['name']
-            # Assign keys to categories based on their name or type
             lname = name.lower()
-            if 'accelerometer' in lname:
+
+            if 'accelerometer_' in lname:
                 self.categories['accelerometer'].append(name)
-            elif 'gyroscope' in lname:
+
+            elif 'gyroscope_' in lname:
                 self.categories['gyroscope'].append(name)
-            elif 'magnetometer' in lname:
+
+            elif 'magnetometer_' in lname:
                 self.categories['magnetometer'].append(name)
+
             elif lname in ['temperature', 'pressure', 'altitude']:
                 self.categories['environment'].append(name)
+
             else:
                 self.categories['telemetry'].append(name)
-    
+
+        self.categories['packets'] = ['NUM_PACKETS_SENT']
+
     def get_left_column_text(self, status_data):
-        text_sections = []
+        parts = []
         for cat in ['accelerometer', 'gyroscope', 'magnetometer', 'environment']:
-            text_sections.append(self._format_category(cat, status_data))
-        return "\n\n".join(text_sections)
-    
+            parts.append(self._format_category(cat, status_data))
+        return "<br><br>".join(parts)
+
     def get_right_column_text(self, status_data):
-        return self._format_category('telemetry', status_data)
-    
+        telem = self._format_category('telemetry', status_data)
+        packets = self._format_category('packets', status_data)
+        return telem + "<br><br>" + packets
+
     def _format_category(self, category: str, status_data) -> str:
-        lines = [f"--{category.capitalize()}--"]
+        lines = [f"<b>-- {category.capitalize()} --</b>"]
+
         for key in self.categories.get(category, []):
-            value = status_data.get(key, 'N/A')
-            # Add units if desired; you could extend this with a unit mapping
-            lines.append(f"{key}: {value}")
-        return "\n".join(lines)
+            value = status_data.get(key, "N/A")
+            unit = self.units.get(key, "")
+
+            if unit:
+                lines.append(f"<b>{key}:</b> <b>{value}</b> {unit}")
+            else:
+                lines.append(f"<b>{key}:</b> <b>{value}</b>")
+
+        return "<br>".join(lines)

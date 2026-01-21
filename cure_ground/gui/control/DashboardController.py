@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import QMessageBox
 from cure_ground.data_sources.DataSourceFactory import DataSourceFactory
 from cure_ground.gui.model.StatusModel import StatusModel
 from cure_ground.gui.view.OrientationVisual import OrientationView
-from cure_ground.gui.view.Graphs import AltitudeGraph, AccelerometerGraph
+from cure_ground.gui.view.Graphs import MergedGraph
 from cure_ground.gui.view.TextFormatter import TextFormatter
 from cure_ground.gui.view.TextFormatterCSV import TextFormatterCSV
 from cure_ground.gui.view.TextFormatterRadio import TextFormatterRadio
@@ -27,8 +27,7 @@ class DashboardController:
         self._last_text_update = 0
 
         # Graphs
-        self.altitude_graph = None
-        self.accelerometer_graph = None
+        self.merged_graph = None
         self.orientation_visual = None
 
         # CSV path only used for CSV sources
@@ -122,10 +121,8 @@ class DashboardController:
             self.current_data_source.disconnect()
         if self.streaming:
             self.toggle_streaming()
-        if self.altitude_graph:
-            self.altitude_graph.clear_graph()
-        if self.accelerometer_graph:
-            self.accelerometer_graph.clear_graph()
+        if self.merged_graph:
+            self.merged_graph.clear_graph()
 
         self.view.toggle_graph_visual_visibility(False)
         self.graph_visible = False
@@ -166,30 +163,25 @@ class DashboardController:
             self.view.get_sidebar().get_graph_button().setText("Show Graphs")
 
     def ensure_graphs_initialized(self):
-        # Accelerometer (top right)
-        if self.accelerometer_graph is None:
-            self.accelerometer_graph = AccelerometerGraph()
-            self.view.set_accelerometer_graph(self.accelerometer_graph)
-
-        # Orientation (bottom left)
+        # Orientation
         if self.orientation_visual is None:
             self.orientation_visual = OrientationView(status_model=self.model)
             self.view.set_orientation_visual(self.orientation_visual)
 
-        # Altitude (bottom right)
-        if self.altitude_graph is None:
-            self.altitude_graph = AltitudeGraph()
-            self.view.set_altitude_graph(self.altitude_graph)
+        # Combined graph
+        if self.merged_graph is None:
+            self.merged_graph = MergedGraph()
+            self.view.set_merged_graph(self.merged_graph)
 
-        # Attach model once
-        self.accelerometer_graph.set_model(self.model)
-        self.altitude_graph.set_model(self.model)
+        # Attach model every time
+        self.merged_graph.set_model(self.model)
 
         # Show them
         self.view.toggle_graph_visual_visibility(True)
 
-        # Force initial layout update
+        # Force layout refresh
         self.view.resizeEvent(None)
+
 
     # --------------------- STATUS UPDATES ---------------------
     def update_status(self):

@@ -1,4 +1,4 @@
-getting started:
+Getting Started:
 cd hybrid-wireless-system
 python -m venv .venv
 .\ground-control-system\.venv\Scripts\activate
@@ -31,7 +31,6 @@ You can type "quit-f" at any time to instantly quit the program. Don't do this w
 Pad Side is the receiving end of the ground control's instructions.
 This is a microcontroller that is receiving instructions such as purge, fill, fire, and custom macros, and then sending back thrust data if a load cell is connected
 This is a platformio project since the workflow for platformio allows flexibility in board selection and I prefer using platformio & C++ for microcontrollers that need to be left alone to their own devices (ha)
-
 
 
 

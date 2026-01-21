@@ -26,8 +26,7 @@ class MainWindow(QMainWindow):
         self.status_display = StatusDisplay(self, self.font_family)
 
         # Graph placeholders (DashboardController will assign)
-        self.altitude_graph = None
-        self.accel_graph = None
+        self.merged_graph = None
         self.orientation_visual = None
 
     def load_custom_font(self, font_path):
@@ -56,7 +55,7 @@ class MainWindow(QMainWindow):
             self.sidebar.raise_()
 
         # Rescale background
-        self.set_background_image("cure_ground/gui/resources/Dashboard.png")
+        self.set_background_image("cure_ground/gui/resources/dashboardWhite.png")
 
         w = self.width() / self.BASE_WIDTH
         h = self.height() / self.BASE_HEIGHT
@@ -72,25 +71,17 @@ class MainWindow(QMainWindow):
         self.status_display.right_column.setFont(font_right)
 
         # Reposition elements
-        self.sidebar.setGeometry(int(75 * w), int(80 * h), int(250 * w), int(700 * h))
-        self.status_display.left_column.move(int(375 * w), int(50 * h))
-        self.status_display.right_column.move(int(650 * w), int(50 * h))
+        self.sidebar.setGeometry(int(75 * w), int(80 * h), int(300 * w), int(925 * h))
+        self.status_display.left_column.move(int(365 * w), int(50 * h))
+        self.status_display.right_column.move(int(675 * w), int(50 * h))
 
         # === Graph Layout ===
-        if self.accel_graph:
-            self.accel_graph.setGeometry(
-                int(self.width() * 0.60),
-                int(self.height() * 0.05),
-                int(self.width() * 0.33),
-                int(self.height() * 0.38)
-            )
-
-        if self.altitude_graph:
-            self.altitude_graph.setGeometry(
-                int(self.width() * 0.60),
-                int(self.height() * 0.55),
-                int(self.width() * 0.33),
-                int(self.height() * 0.38)
+        if self.merged_graph:
+            self.merged_graph.setGeometry(
+                int(self.width() * 0.65),   # horizontal shift
+                int(self.height() * 0.10),  # vertical shift
+                int(self.width() * 0.30),   # width
+                int(self.height() * 0.75)   # height
             )
 
         if self.orientation_visual:
@@ -117,22 +108,15 @@ class MainWindow(QMainWindow):
             visual_widget.show()
             visual_widget.raise_()
 
-    def set_altitude_graph(self, graph_widget):
-        self.altitude_graph = graph_widget
-        if graph_widget:
-            graph_widget.setParent(self)
-            graph_widget.show()
-            graph_widget.raise_()
-
-    def set_accelerometer_graph(self, graph_widget):
-        self.accel_graph = graph_widget
+    def set_merged_graph(self, graph_widget):
+        self.merged_graph = graph_widget
         if graph_widget:
             graph_widget.setParent(self)
             graph_widget.show()
             graph_widget.raise_()
 
     def toggle_graph_visual_visibility(self, visible):
-        for widget in [self.altitude_graph, self.accel_graph, self.orientation_visual]:
+        for widget in [self.merged_graph, self.orientation_visual]:
             if widget:
                 widget.setVisible(visible)
                 if visible:

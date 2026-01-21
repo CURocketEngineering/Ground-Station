@@ -13,7 +13,7 @@ class Sidebar(QWidget):
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         
     def setup_ui(self):
-        self.setGeometry(75, 80, 250, 700)
+        self.setGeometry(75, 80, 300, 925)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setStyleSheet(SIDEBAR_STYLE)
         self.raise_()

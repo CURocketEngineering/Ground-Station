@@ -110,3 +110,7 @@ data_names:
     name: CURRENT_STATE
     id: 23
     unit: "enum"
+  - type: single
+    name: NUM_PACKETS_SENT
+    id: 24
+    unit: "packets"
