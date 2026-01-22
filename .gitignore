@@ -168,3 +168,6 @@ cython_debug/
 aa-test/
 .DS_Store
 **/.DS_Store
+
+# Ignore all files in any directory named logs
+**/logs/
