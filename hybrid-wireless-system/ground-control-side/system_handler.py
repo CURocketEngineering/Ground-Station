@@ -1,4 +1,6 @@
 from system_vars import *
+import time
+import threading
 
 
 def user_input():
@@ -186,9 +188,7 @@ def fire_cycle():
         open_fire_relay()  # Activate fire relay
         root.after(3000, close_fire_relay)  # Close fire relay after 3 seconds
         root.after(3000, close_fill_relay)  # Close fill relay after 3 seconds
-        time.sleep(
-            5
-        )  # Wait 5 seconds before returning control to the user to allow the fire cycle to complete
+        time.sleep(5)  # Wait 5 seconds before returning control to the user to allow the fire cycle to complete
     else:
         print(
             "\t[⚠] Warning: This function should not be called unless the system is armed."
