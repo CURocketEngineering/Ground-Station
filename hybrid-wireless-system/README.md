@@ -1,12 +1,24 @@
 # Getting Started:
-step 1: Make sure you are in the right directory.
+Step 1: Make sure you are in the right directory
 ```
-hybrid-wireless-system
+cd hybrid-wireless-system
 ```
-python -m venv .venv
-.\ground-control-system\.venv\Scripts\activate
-pip install -r .\ground-control-system\requirements.txt
+Step 2: Create the enviorment
+```
+python3 -m venv .venv
+```
+Step 3: Activate the enviorment and install all of the requirments
 
+Windows
+```
+..\ground-control-system\.venv\Scripts\activate.bat
+pip3 install -r .\ground-control-system\requirements.txt
+```
+MacOS
+```
+source venv/bin/activate
+pip3 install -r .\ground-control-system\requirements.txt
+```
 Platformio is required for the pad side microcontroller
 Python is required for the ground control laptop
 
