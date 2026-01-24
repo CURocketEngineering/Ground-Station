@@ -49,19 +49,6 @@ This is a platformio project since the workflow for platformio allows flexibilit
 
 
 
-When moving from a nano to a teensy:
-- change the board in platformio.ini
-[env:teensy41]
-platform = teensy
-board = teensy41
-default_envs = teensy41
-
-- change serial speed 
-- change load cell reading method to non blocking
-- pin mappings in main
-
-
-
 Wishlist to do:
 TCP for commands, UDP for receiving load cell data. Also want call and receive for logging messages, so I can log CMDs as well as if/when they were received
 arming servo to flip a physical switch to close the connection to the 12V to fire and fill continuity when the arm command is sent
