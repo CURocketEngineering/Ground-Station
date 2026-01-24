@@ -19,7 +19,7 @@ MacOS
 source venv/bin/activate
 pip3 install -r .\ground-control-system\requirements.txt
 ```
-Platformio is required for the pad side microcontroller
+NOTE: Platformio is required for the pad side microcontroller
 Python is required for the ground control laptop
 
 ------------------------------------------------------------
