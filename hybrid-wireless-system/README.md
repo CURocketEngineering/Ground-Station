@@ -29,8 +29,8 @@ It is a system accurate python display with a command line interface to avoid mi
 Ground control sends instructions over radio to the pad side microcontroller where 
 
 ## Ground control commands:
-###  ARM - Can only be used in safe mode. Enables the use of fill and fire. Closes and disables the use of purge.
-###  SAFE - The default state, can only be used in armed mode. Enables the use of purge. Closes and disables the use of fill, and disables the use of fire.
+    ARM - Can only be used in safe mode. Enables the use of fill and fire. Closes and disables the use of purge.
+    SAFE - The default state, can only be used in armed mode. Enables the use of purge. Closes and disables the use of fill, and disables the use of fire.
     PURGE - Can only be used in safe mode. Toggles the purge relay that leads to the purge solenoid.
     FILL - Can only be used in armed mode. Toggles the fill relay that leads to the fill solenoid.
     FIRE - Can only be used in armed mode. Toggles the fire relay that leads to the igniter for one second, then deactivates the fire relay AND the fill relay.
