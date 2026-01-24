@@ -1,13 +1,13 @@
 # Getting Started:
-Step 1: Make sure you are in the right directory
+## Step 1: Make sure you are in the right directory
 ```
 cd hybrid-wireless-system
 ```
-Step 2: Create the enviorment
+## Step 2: Create the enviorment
 ```
 python3 -m venv .venv
 ```
-Step 3: Activate the enviorment and install all of the requirments
+## Step 3: Activate the enviorment and install all of the requirments
 
 Windows
 ```
