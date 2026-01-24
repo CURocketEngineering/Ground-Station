@@ -1,5 +1,8 @@
 # Getting Started:
-cd hybrid-wireless-system
+step 1: Make sure you are in the right directory.
+```
+hybrid-wireless-system
+```
 python -m venv .venv
 .\ground-control-system\.venv\Scripts\activate
 pip install -r .\ground-control-system\requirements.txt
