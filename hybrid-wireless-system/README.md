@@ -24,13 +24,13 @@ Python is required for the ground control laptop
 
 ------------------------------------------------------------
 
-Ground Control side is the laptop and user that is controlling the purge, fill, and fire remotely, and receiving load cell data if applicable
+## Ground Control side is the laptop and user that is controlling the purge, fill, and fire remotely, and receiving load cell data if applicable
 It is a system accurate python display with a command line interface to avoid misclicks or accidental actuations of any systems that may be caused by a GUI. 
 Ground control sends instructions over radio to the pad side microcontroller where 
 
-Ground control commands:
-    ARM - Can only be used in safe mode. Enables the use of fill and fire. Closes and disables the use of purge.
-    SAFE - The default state, can only be used in armed mode. Enables the use of purge. Closes and disables the use of fill, and disables the use of fire.
+## Ground control commands:
+###  ARM - Can only be used in safe mode. Enables the use of fill and fire. Closes and disables the use of purge.
+###  SAFE - The default state, can only be used in armed mode. Enables the use of purge. Closes and disables the use of fill, and disables the use of fire.
     PURGE - Can only be used in safe mode. Toggles the purge relay that leads to the purge solenoid.
     FILL - Can only be used in armed mode. Toggles the fill relay that leads to the fill solenoid.
     FIRE - Can only be used in armed mode. Toggles the fire relay that leads to the igniter for one second, then deactivates the fire relay AND the fill relay.
