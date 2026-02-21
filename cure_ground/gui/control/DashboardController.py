@@ -4,6 +4,7 @@ from PyQt6.QtWidgets import QMessageBox
 
 from cure_ground.data_sources.DataSourceFactory import DataSourceFactory
 from cure_ground.gui.model.StatusModel import StatusModel
+from cure_ground.gui.view import MainWindow
 from cure_ground.gui.view.OrientationVisual import OrientationView
 from cure_ground.gui.view.Graphs import MergedGraph
 from cure_ground.gui.view.TextFormatter import TextFormatter
@@ -13,7 +14,7 @@ from cure_ground.gui.view.TextFormatterRadio import TextFormatterRadio
 
 class DashboardController:
     def __init__(self, view):
-        self.view = view
+        self.view: MainWindow = view
         self.model = StatusModel()
         self.text_formatter = TextFormatter()
         self.text_formatter_csv = TextFormatterCSV()
@@ -115,6 +116,10 @@ class DashboardController:
                 return False
 
             self.model.set_data_source(self.current_data_source)
+            # use current time mm-dd-yy_hh-mm-ss format
+            self.model.set_local_save_path(
+                f"data_{time.strftime('%m-%d-%y_%H-%M-%S')}.csv"
+            )
             self.connected = True
             sidebar = self.view.get_sidebar()
             sidebar.get_data_source_combo().setEnabled(False)
