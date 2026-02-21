@@ -1,73 +1,72 @@
-# cure_ground/gui/view/PacketLossIndicator.py
-from PyQt6.QtWidgets import QWidget
-from PyQt6.QtGui import QPainter, QColor
-from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QWidget, QSizePolicy
+from PyQt6.QtGui import QPainter, QColor, QFont, QPen
+from PyQt6.QtCore import Qt, QRectF
 
 class PacketLossIndicator(QWidget):
-    def __init__(self, parent=None, height=25):
+    def __init__(self, parent=None, height=40, segments=10):
         super().__init__(parent)
-
-        self.retention_ratio = 1.0
+        self.retention_ratio = 1.0  # 1.0 = 100%
+        self.segments = segments
         self.setMinimumHeight(height)
         self.setMaximumHeight(height)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.setFont(QFont("Arial", 14, QFont.Weight.Bold))
 
-        self.setSizePolicy(
-            QSizePolicy.Policy.Expanding,
-            QSizePolicy.Policy.Fixed
-        )
+        # Colors for ranges
+        self.colors = [
+            (0.0, 0.3, QColor("#ff0000")),    # Red 0–30%
+            (0.3, 0.5, QColor("#ff6600")),    # Orange 31–50%
+            (0.5, 0.7, QColor("#ffcc00")),    # Yellow 51–70%
+            (0.7, 0.9, QColor("#99cc00")),    # Yellow-Green 71–90%
+            (0.9, 1.01, QColor("#00cc00")),   # Bright Green 91–100%
+        ]
+
+    def _get_color_for_ratio(self, ratio: float) -> QColor:
+        for low, high, color in self.colors:
+            if low <= ratio < high:
+                return color
+        return QColor("#cccccc")  # fallback gray
 
     def set_packet_loss(self, retention_ratio: float):
-        """
-        Update the retention ratio (0.0 - 1.0)
-        """
-        self._retention_ratio = max(0.0, min(1.0, retention_ratio))
-        self.update()  # triggers repaint
+        """Update the current retention ratio (0.0–1.0)."""
+        self.retention_ratio = max(0.0, min(1.0, retention_ratio))
+        self.update()
 
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        # Determine color based on retention
-        color = self._retention_to_color(self._retention_ratio)
-        painter.setBrush(color)
-        painter.setPen(Qt.PenStyle.NoPen)
+        width = self.width()
+        height = self.height()
+        segment_width = width / self.segments
 
-        # Fill rectangle for the bar
-        width = int(self.width() * self._retention_ratio)
-        painter.drawRect(0, 0, width, self.height())
+        # Determine current color based on retention
+        fill_color = self._get_color_for_ratio(self.retention_ratio)
 
-        # Optional: Draw border for full bar
-        painter.setPen(Qt.PenStyle.SolidLine)
-        painter.setBrush(Qt.BrushStyle.NoBrush)
-        painter.drawRect(0, 0, self.width()-1, self.height()-1)
+        # Calculate how many segments are filled
+        filled_segments = int(self.retention_ratio * self.segments + 0.999)  # round up
 
-    def _retention_to_color(self, retention: float) -> QColor:
-        """
-        Maps retention ratio to color:
-        0.0 -> bright red
-        0.0-0.2 -> red -> orange
-        0.2-0.5 -> orange -> yellow
-        0.5-0.8 -> yellow -> yellow-green
-        0.8-1.0 -> yellow-green -> bright green
-        """
-        if retention <= 0.2:
-            # red to orange
-            r = 255
-            g = int(255 * (retention / 0.2) * 0.5)  # fade red->orange
-        elif retention <= 0.5:
-            # orange to yellow
-            r = 255
-            g = int(128 + 127 * ((retention - 0.2) / 0.3))  # 128 -> 255
-        elif retention <= 0.8:
-            # yellow to yellow-green
-            r = int(255 - 128 * ((retention - 0.5) / 0.3))  # 255 -> 127
-            g = 255
+        # Only draw filled segments
+        for i in range(filled_segments):
+            x = i * segment_width + 1
+            w = segment_width - 2
+            rect = QRectF(x, 1, w, height - 2)
+
+            painter.setBrush(fill_color)
+            pen = QPen(QColor("#000000"), 1)
+            painter.setPen(pen)
+            painter.drawRoundedRect(rect, 6, 6)
+
+        # Draw percentage text on the last filled segment
+        if filled_segments == 0:
+            segment_index = 0
         else:
-            # yellow-green to bright green
-            r = int(127 * (1 - (retention - 0.8)/0.2))  # 127 -> 0
-            g = 255
+            segment_index = filled_segments - 1
 
-        r = max(0, min(255, r))
-        g = max(0, min(255, g))
-        return QColor(r, g, 0)
+        if filled_segments > 0:
+            x = segment_index * segment_width
+            rect = QRectF(x, 0, segment_width, height)
+            painter.setPen(QColor("#000000"))
+            painter.setFont(self.font())
+            text = f"{int(self.retention_ratio * 100)}%"
+            painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, text)
