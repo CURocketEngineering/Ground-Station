@@ -116,6 +116,10 @@ class DashboardController:
                 return False
 
             self.model.set_data_source(self.current_data_source)
+            # use current time mm-dd-yy_hh-mm-ss format
+            self.model.set_local_save_path(
+                f"data_{time.strftime('%m-%d-%y_%H-%M-%S')}.csv"
+            )
             self.connected = True
             sidebar = self.view.get_sidebar()
             sidebar.get_data_source_combo().setEnabled(False)

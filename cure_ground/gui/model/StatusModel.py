@@ -3,7 +3,7 @@ from typing import Dict, Optional, List, Tuple
 from cure_ground.data_sources import DataSource
 import numpy as np
 from collections import deque
-import json 
+
 
 class GraphDataManager:
     def __init__(self, max_points: int = 5000):  # Increased for longer flights
@@ -83,15 +83,37 @@ class GraphDataManager:
 
 
 class StatusModel:
-    def __init__(self, data_source: Optional[DataSource] = None, save_path: Optional[str] = None):
+    def __init__(
+        self, data_source: Optional[DataSource] = None, save_path: Optional[str] = None
+    ):
         self.status_data = {}
         self.last_update_time = 0
         self.data_source = data_source
         self.save_path = save_path
         self.graph_manager = GraphDataManager()
+        self.save_headers = []
 
     def set_data_source(self, data_source: DataSource):
         self.data_source = data_source
+
+    def set_local_save_path(self, save_path: str):
+        self.save_path = save_path
+        # Write a CSV header
+        assert hasattr(
+            self.data_source, "data_names"
+        ), "Data source must have 'data_names' attribute to set local save path"
+        try:
+            self.save_headers = self.data_source.data_names.get_name_list()
+        except Exception as e:
+            print(
+                f"Warning: Data source does not have 'data_names' or 'get_name_list' method. CSV header will be generic. Error: {e}"
+            )
+            self.save_headers = []
+        try:
+            with open(self.save_path, "w") as f:
+                f.write(",".join(self.save_headers) + "\n")
+        except Exception as e:
+            print(f"Error writing CSV header to {self.save_path}: {e}")
 
     def update_from_data_source(self) -> bool:
         if not self.data_source or not self.data_source.is_connected():
@@ -101,18 +123,20 @@ class StatusModel:
 
         if not data:
             # No new data available
-            return False 
+            return False
 
         self.status_data = data
         self.last_update_time = time.time()
         self._update_graph_data(data)
 
         if self.save_path:
-            # Save the dictionary as the next line in a JSONL file
+            # Save the dictionary as the next line in a CSV file
+            # The first line in the CSV already has the keys as headers, so we just need to write the values in the correct order
             try:
                 with open(self.save_path, "a") as f:
-                    json.dump(data, f)
-                    f.write("\n")
+                    headers = self.save_headers
+                    values = [str(data.get(h, "")) for h in headers]
+                    f.write(",".join(values) + "\n")
             except Exception as e:
                 print(f"Error saving data to {self.save_path}: {e}")
         return True
