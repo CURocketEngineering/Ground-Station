@@ -5,6 +5,7 @@ from PyQt6.QtCore import Qt
 from cure_ground.gui.view.Sidebar import Sidebar
 from cure_ground.gui.view.StatusDisplay import StatusDisplay
 from cure_ground.gui.view.OrientationVisual import OrientationView
+from cure_ground.gui.view.PacketLossIndicator import PacketLossIndicator
 
 class MainWindow(QMainWindow):
     BASE_WIDTH = 1920
@@ -24,6 +25,10 @@ class MainWindow(QMainWindow):
         # UI components
         self.sidebar = Sidebar(self, self.font_family)
         self.status_display = StatusDisplay(self, self.font_family)
+        # After creating status_display
+        self.packet_loss_indicator = PacketLossIndicator(self)
+        self.packet_loss_indicator.show()  # make sure it’s visible
+
 
         # Graph placeholders (DashboardController will assign)
         self.merged_graph = None
@@ -92,6 +97,18 @@ class MainWindow(QMainWindow):
                 int(self.height() * 0.35) 
             )
 
+        # === Packet Loss Indicator Layout ===
+        if hasattr(self, "packet_loss_indicator") and self.packet_loss_indicator:
+            bar_height = self.packet_loss_indicator.height()
+            self.packet_loss_indicator.setGeometry(
+                0,                     # x = left edge
+                self.height() - bar_height,  # y = bottom edge
+                self.width(),          # full width
+                bar_height             # fixed height
+            )
+            self.packet_loss_indicator.raise_()
+
+
 
 
     # Sidebar & Status access
@@ -121,3 +138,5 @@ class MainWindow(QMainWindow):
                 widget.setVisible(visible)
                 if visible:
                     widget.raise_()
+    def get_packet_loss_indicator(self):
+        return self.packet_loss_indicator

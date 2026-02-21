@@ -1,6 +1,7 @@
 import os
 from collections import defaultdict
 from typing import Dict, List
+from pathlib import Path
 
 import yaml
 
@@ -54,15 +55,13 @@ class DataNames:
 
 
 def load_data_name_enum(version: int) -> DataNames:
-    """Load the data names from a YAML file and create an Enum"""
+    """Load the data names from a YAML file"""
 
-    # Convert the version to a 2 digit string
-    # e.g. 1 -> 01
     version_str = str(version).zfill(2)
 
-    yaml_path = (
-        f"cure_ground/core/protocols/data_names/data_names_v{version_str}.yaml"
-    )
+    base_path = Path(__file__).resolve().parent
+    yaml_path = base_path / f"data_names_v{version_str}.yaml"
+
     with open(yaml_path, "r") as file:
         data_definitions = yaml.safe_load(file)["data_names"]
 
@@ -70,16 +69,15 @@ def load_data_name_enum(version: int) -> DataNames:
 
 
 def get_list_of_available_data_name_configs() -> list:
-    """
-    Get a list of available data name configurations.
-    """
-    folder_path = "cure_ground/core/protocols/data_names"
-    files = os.listdir(folder_path)
+    base_path = Path(__file__).resolve().parent
+    files = os.listdir(base_path)
+
     available_files = []
     for file in files:
         if file.endswith(".yaml"):
             version = file.split("_v")[1].split(".yaml")[0]
             available_files.append(version)
+
     return available_files
 
 
