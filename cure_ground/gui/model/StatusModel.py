@@ -3,7 +3,7 @@ from typing import Dict, Optional, List, Tuple
 from cure_ground.data_sources import DataSource
 import numpy as np
 from collections import deque
-
+import json 
 
 class GraphDataManager:
     def __init__(self, max_points: int = 5000):  # Increased for longer flights
@@ -83,10 +83,11 @@ class GraphDataManager:
 
 
 class StatusModel:
-    def __init__(self, data_source: Optional[DataSource] = None):
+    def __init__(self, data_source: Optional[DataSource] = None, save_path: Optional[str] = None):
         self.status_data = {}
         self.last_update_time = 0
         self.data_source = data_source
+        self.save_path = save_path
         self.graph_manager = GraphDataManager()
 
     def set_data_source(self, data_source: DataSource):
@@ -98,13 +99,23 @@ class StatusModel:
 
         data = self.data_source.get_data()
 
-        if data:
-            self.status_data = data
-            self.last_update_time = time.time()
-            self._update_graph_data(data)
-            return True
+        if not data:
+            # No new data available
+            return False 
 
-        return False
+        self.status_data = data
+        self.last_update_time = time.time()
+        self._update_graph_data(data)
+
+        if self.save_path:
+            # Save the dictionary as the next line in a JSONL file
+            try:
+                with open(self.save_path, "a") as f:
+                    json.dump(data, f)
+                    f.write("\n")
+            except Exception as e:
+                print(f"Error saving data to {self.save_path}: {e}")
+        return True
 
     def _update_graph_data(self, data: Dict[str, str]):
         """Extract altitude and accelerometer data and update graph manager"""

@@ -148,7 +148,7 @@ class Sidebar(QWidget):
     def get_refresh_button(self):
         return self.refresh_button
 
-    def get_connect_button(self):
+    def get_connect_button(self) -> QPushButton:
         return self.connect_button
 
     def get_live_update_button(self):

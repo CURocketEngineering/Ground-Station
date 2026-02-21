@@ -4,6 +4,7 @@ from PyQt6.QtWidgets import QMessageBox
 
 from cure_ground.data_sources.DataSourceFactory import DataSourceFactory
 from cure_ground.gui.model.StatusModel import StatusModel
+from cure_ground.gui.view import MainWindow
 from cure_ground.gui.view.OrientationVisual import OrientationView
 from cure_ground.gui.view.Graphs import MergedGraph
 from cure_ground.gui.view.TextFormatter import TextFormatter
@@ -13,7 +14,7 @@ from cure_ground.gui.view.TextFormatterRadio import TextFormatterRadio
 
 class DashboardController:
     def __init__(self, view):
-        self.view = view
+        self.view: MainWindow = view
         self.model = StatusModel()
         self.text_formatter = TextFormatter()
         self.text_formatter_csv = TextFormatterCSV()
