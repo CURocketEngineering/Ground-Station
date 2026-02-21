@@ -1,38 +1,14 @@
-# Run `pre-commit autoupdate` occasionally to bump revs.
-minimum_pre_commit_version: "3.6.0"
-
 repos:
-  # Basic hygiene
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
-    hooks:
-      - id: trailing-whitespace
-      - id: end-of-file-fixer
-      - id: check-yaml
-      - id: check-merge-conflict
-      - id: debug-statements
-      - id: detect-private-key
-      - id: mixed-line-ending
-        args: [--fix=lf]
-
-  # Python formatter (standardizes code style)
-  - repo: https://github.com/psf/black
-    rev: 24.8.0
-    hooks:
-      - id: black
-        args: [--line-length=80]
-        language_version: python3
-
-  # Linting (fast), plus import sorting via Ruff
+  # 0) Python linter and formatter: Ruff
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.6.9
     hooks:
+      # Lint + autofix. If Ruff fixes something, the hook exits nonzero to force a re-run.
       - id: ruff
-        args:
-          - --fix
-          - --unsafe-fixes
-          - --line-length=80
-          # Enable import sorting:
-          - --select=I
-          # You can add/adjust rules here (e.g., F,E,I,UP,PERF)
-        types_or: [python]
+        name: ruff (lint + fix)
+        args: ["--fix", "--exit-non-zero-on-fix"]
+        fail_fast: true
+      # Code formatter (Black replacement)
+      - id: ruff-format
+        name: ruff (format)
+        fail_fast: true

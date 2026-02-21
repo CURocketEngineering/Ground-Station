@@ -1,10 +1,9 @@
 # cure_ground/core/protocols/states/loader.py
 from __future__ import annotations
 
-import enum
 import os
 from dataclasses import dataclass
-from typing import Dict, Iterable, List, Mapping, Optional, Type, Union
+from typing import Dict, Iterable, List, Optional, Union
 
 import yaml
 
@@ -104,8 +103,10 @@ def load_states(version: int) -> States:
 
     try:
         state_defs = cfg["states"]
-    except Exception as e:
-        raise ValueError(f"Invalid states YAML at {yaml_path}: missing 'states' list") from e
+    except KeyError as e:
+        raise ValueError(
+            f"Invalid states YAML at {yaml_path}: missing 'states' list"
+        ) from e
 
     return States(state_defs)
 

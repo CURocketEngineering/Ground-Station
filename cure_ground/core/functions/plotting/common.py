@@ -30,7 +30,9 @@ def get_launch_time(
         The timestamp (ms) of the launch event.
     """
 
-    launch_rows = df.loc[df[state_column_name] == launch_state, data_names["TIMESTAMP"].name]
+    launch_rows = df.loc[
+        df[state_column_name] == launch_state, data_names["TIMESTAMP"].name
+    ]
     if launch_rows.empty:
         raise ValueError(f"No row found with {state_column_name} == {launch_state}")
     return launch_rows.iloc[0]
@@ -49,7 +51,9 @@ def shift_timestamp_to_launch(
     Returns:
         A DataFrame with an updated 'timestamp' column in seconds-from-launch.
     """
-    df[data_names["TIMESTAMP"].name] = (df[data_names["TIMESTAMP"].name] - launch_time_ms) / 1000.0
+    df[data_names["TIMESTAMP"].name] = (
+        df[data_names["TIMESTAMP"].name] - launch_time_ms
+    ) / 1000.0
     return df
 
 
@@ -108,7 +112,12 @@ def plot_column_full_and_launch_window(
     # -- Launch-Window Plot --
     fig_launch = go.Figure()
     fig_launch.add_trace(
-        go.Scatter(x=launch_df.index, y=launch_df[column].interpolate(), mode="lines", name=column)
+        go.Scatter(
+            x=launch_df.index,
+            y=launch_df[column].interpolate(),
+            mode="lines",
+            name=column,
+        )
     )
     fig_launch.update_layout(
         title=f"{column} (Launch Window: -2 to +40 s)",
@@ -184,13 +193,22 @@ def plot_summary_figure(
     # Add vertical lines for each detected state change
     if data_names["STATE_CHANGE"].name in launch_df.columns:
         state_changes = launch_df[data_names["STATE_CHANGE"].name].dropna()
-        color_cycle = ["red", "lime", "blue", "cyan", "magenta", "yellow", "white", "orange"]
+        color_cycle = [
+            "red",
+            "lime",
+            "blue",
+            "cyan",
+            "magenta",
+            "yellow",
+            "white",
+            "orange",
+        ]
         for i, (idx, val) in enumerate(state_changes.items()):
             color = color_cycle[i % len(color_cycle)]
             # Attempt to retrieve the state's name from the states enum
             try:
                 label = states(val).name
-            except:
+            except ValueError:
                 label = f"State {val}"
 
             annotation_text = f"State: {label} ({val})"
@@ -228,8 +246,8 @@ def plot_summary_figure(
         title="Altitude and Total Acceleration (Launch Window: -2 to +40 s)",
         xaxis_title="Time from Launch (s)",
         yaxis_title=(
-            f"Altitude ({units.get(data_names["ALTITUDE"].name, '')}) / "
-            f"Total Acceleration ({units.get(data_names["ACCELEROMETER_X"].name, '')})"
+            f"Altitude ({units.get(data_names['ALTITUDE'].name, '')}) / "
+            f"Total Acceleration ({units.get(data_names['ACCELEROMETER_X'].name, '')})"
         ),
         template="plotly_dark",
     )

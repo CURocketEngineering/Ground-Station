@@ -13,15 +13,16 @@ from .TextFormatter import TextFormatter
 from .TextFormatterCSV import TextFormatterCSV
 
 __all__ = [
-    'MainWindow',
-    'Sidebar',
-    'StatusDisplay',
-    'OrientationVew'
-    'MergedGraph',
-    'BUTTON_STYLE',
-    'COMBO_BOX_STYLE',
-    'SIDEBAR_STYLE',
-    'get_text_style',
-    'TextFormatter',
-    'TextFormatterCSV'
+    "MainWindow",
+    "Sidebar",
+    "StatusDisplay",
+    "OrientationVewMergedGraph",
+    "BUTTON_STYLE",
+    "COMBO_BOX_STYLE",
+    "SIDEBAR_STYLE",
+    "get_text_style",
+    "TextFormatter",
+    "TextFormatterCSV",
+    "MergedGraph",
+    "OrientationView",
 ]

@@ -173,11 +173,11 @@ void check_ABORT(char* buf){
 
   digitalWrite(FIRE_PIN, LOW);
      XBee.println("FIREING OFF");
-
+ 
   digitalWrite(ARM_PIN, LOW);
      XBee.println("NOT ARMED");
    
-   digitalWrite(PURGE_PIN, HIGH);
+   digitalWrite(PURGE_PIN, LOW);
      XBee.println("Purging OFF");
 
 

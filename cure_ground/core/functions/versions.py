@@ -15,7 +15,10 @@ from ..protocols.immutable.versions import (
 
 
 def get_versions(
-    port: str, baudrate: int = 115200, timeout: float = 2.0, max_response_size: int = 1024
+    port: str,
+    baudrate: int = 115200,
+    timeout: float = 2.0,
+    max_response_size: int = 1024,
 ) -> Tuple[Optional[List[VersionInfo]], Optional[str]]:
     """
     Get version information from MARTHA device

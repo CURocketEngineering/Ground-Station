@@ -46,11 +46,24 @@ cure-ground --help
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────────╮
 │ ping          Test connection to MARTHA device                                                       │
-│ versions      Get version information from MARTHA device                                             │
-│ flash-dump    Download and save flash memory contents                                                │
-│ post-flight   Run the post-flight data collection & processing flow                                  │
+│ versions      Get version information from MARTHA device                                             │                                    
+│ post-flight   Run the post-flight data collection & processing flow                                  |
+| gui           Launch the telemetry GUI application                                                   │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
+
+### GUI
+
+To run the telemetry GUI, you'll first need to install some assets.
+
+Download everything in [this assets folder](https://clemson.sharepoint.com/:f:/r/teams/ClemsonUniversityRocketEngineering/Shared%20Documents/CURE/Engineering%20Division/Subteams/Software/Ground-Station-Assets?csf=1&web=1&e=NV0l7o) and place it in `cure_ground/gui/resources`
+
+You can then the run the GUI with:
+
+```bash
+cure-ground gui
+```
+
 
 ### Post Flight
 

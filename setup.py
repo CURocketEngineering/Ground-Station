@@ -5,6 +5,9 @@ setup(
     version="0.1.0",
     packages=find_packages(),
     install_requires=[
+        "numpy>=1.23.0",
+        "psutil>=5.9.0",
+        "PyOpenGL>=3.1.7",
         "pyqt6",
         "typer>=0.9.0",
         "rich>=13.0.0",
@@ -17,6 +20,8 @@ setup(
         "plotly",
         "pyyaml",
         "pyqtgraph",
+        "pre-commit",
+        "ruff",
     ],
     entry_points={
         "console_scripts": [
@@ -34,10 +39,12 @@ setup(
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14",
     ],
-    python_requires=">=3.8",
+    python_requires=">=3.9",
 )

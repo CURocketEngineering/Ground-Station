@@ -8,7 +8,6 @@ import pandas as pd
 import questionary
 import serial
 import serial.tools.list_ports
-from tqdm import tqdm
 
 from cure_ground.core.functions.flash_dump import flash_dump as flash_dump
 from cure_ground.core.functions.plotting.basic_suite_plotly import plot_flight_data
@@ -54,7 +53,6 @@ def post_flight_flow():
         df = pd.read_csv(selected_csv_path)
         print(df.head())
     else:
-
         # Ask which COMM / tty port the board is on
         available_ports = serial.tools.list_ports.comports()
         port_options = [port.device for port in available_ports]

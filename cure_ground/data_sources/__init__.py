@@ -8,9 +8,9 @@ from .RadioDataSource import RadioDataSource
 from .LaunchDetector import LaunchDetector
 
 __all__ = [
-    'DataSource',
-    'SerialDataSource', 
-    'CSVDataSource',
-    'RadioDataSource',
-    'LaunchDetector'
+    "DataSource",
+    "SerialDataSource",
+    "CSVDataSource",
+    "RadioDataSource",
+    "LaunchDetector",
 ]

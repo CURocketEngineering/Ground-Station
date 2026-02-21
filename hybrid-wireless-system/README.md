@@ -1,19 +1,34 @@
-Getting Started:
+# Getting Started:
+## Step 1: Make sure you are in the right directory
+```
 cd hybrid-wireless-system
-python -m venv .venv
-.\ground-control-system\.venv\Scripts\activate
-pip install -r .\ground-control-system\requirements.txt
+```
+## Step 2: Create the enviorment
+```
+python3 -m venv .venv
+```
+## Step 3: Activate the enviorment and install all of the requirments
 
-Platformio is required for the pad side microcontroller
+Windows
+```
+..\ground-control-system\.venv\Scripts\activate.bat
+pip3 install -r .\ground-control-system\requirements.txt
+```
+MacOS
+```
+source venv/bin/activate
+pip3 install -r .\ground-control-system\requirements.txt
+```
+NOTE: Platformio is required for the pad side microcontroller
 Python is required for the ground control laptop
 
 ------------------------------------------------------------
 
-Ground Control side is the laptop and user that is controlling the purge, fill, and fire remotely, and receiving load cell data if applicable
+## Ground Control side is the laptop and user that is controlling the purge, fill, and fire remotely, and receiving load cell data if applicable
 It is a system accurate python display with a command line interface to avoid misclicks or accidental actuations of any systems that may be caused by a GUI. 
 Ground control sends instructions over radio to the pad side microcontroller where 
 
-Ground control commands:
+## Ground control commands:
     ARM - Can only be used in safe mode. Enables the use of fill and fire. Closes and disables the use of purge.
     SAFE - The default state, can only be used in armed mode. Enables the use of purge. Closes and disables the use of fill, and disables the use of fire.
     PURGE - Can only be used in safe mode. Toggles the purge relay that leads to the purge solenoid.
@@ -31,19 +46,6 @@ You can type "quit-f" at any time to instantly quit the program. Don't do this w
 Pad Side is the receiving end of the ground control's instructions.
 This is a microcontroller that is receiving instructions such as purge, fill, fire, and custom macros, and then sending back thrust data if a load cell is connected
 This is a platformio project since the workflow for platformio allows flexibility in board selection and I prefer using platformio & C++ for microcontrollers that need to be left alone to their own devices (ha)
-
-
-
-When moving from a nano to a teensy:
-- change the board in platformio.ini
-[env:teensy41]
-platform = teensy
-board = teensy41
-default_envs = teensy41
-
-- change serial speed 
-- change load cell reading method to non blocking
-- pin mappings in main
 
 
 
