@@ -183,6 +183,18 @@ class RadioDataSource(DataSource):
             raise IOError("Failed to read timestamp")
         return struct.unpack(">I", timestamp_bytes)[0]
 
+    def _read_packet_number(self) -> int:
+        """
+        Read and parse 4-byte packet number.
+
+        Returns:
+            Packet number as integer
+        """
+        packet_num_bytes = self.ser.read(4)
+        if len(packet_num_bytes) != 4:
+            raise IOError("Failed to read packet number")
+        return struct.unpack(">I", packet_num_bytes)[0]
+
     def _parse_data_entry(self, data_id: int, data_bytes: bytes) -> Dict:
         """
         Parse a single data entry.
@@ -226,6 +238,7 @@ class RadioDataSource(DataSource):
             List of parsed data dictionaries
         """
         packet_data = []
+        assert self.ser is not None, "Serial connection not established"
 
         while True:
             # Read ID byte
@@ -288,11 +301,15 @@ class RadioDataSource(DataSource):
             # Read timestamp
             timestamp = self._read_timestamp()
 
+            # Read packet number
+            packet_number = self._read_packet_number()
+
             # Read all data in packet
             packet_data = self._read_packet_data()
 
             return {
                 "timestamp": timestamp,
+                "packet_number": packet_number,
                 "data": packet_data,
                 "receive_time": time.time(),
             }
