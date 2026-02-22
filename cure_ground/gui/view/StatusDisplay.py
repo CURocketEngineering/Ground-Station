@@ -7,7 +7,7 @@ class StatusDisplay(QWidget):
     def __init__(self, parent, font_family):
         super().__init__(parent)
         self.font_family = font_family
-        self.base_font_size = 20
+        self.base_font_size = 24
         self.setup_ui()
 
     def setup_ui(self):

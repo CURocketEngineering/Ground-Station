@@ -7,7 +7,7 @@ Location: cure_ground/data_sources/radio_data_source.py
 
 import struct
 import time
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 import serial
 
 from cure_ground.core.protocols.data_names.data_name_loader import (
@@ -97,7 +97,7 @@ class RadioDataSource(DataSource):
         """Check if data source is connected."""
         return self._connected and self.ser is not None and self.ser.is_open
 
-    def get_data(self) -> Optional[Dict[str, str]]:
+    def get_data(self) -> Optional[Dict[str, Any]]:
         """
         Get latest data in StatusModel-compatible format.
 
@@ -145,11 +145,11 @@ class RadioDataSource(DataSource):
                         try:
                             comp_info = self.data_names.get_info_by_id(comp_id)
                             comp_name = comp_info["name"]
-                            self.latest_data[comp_name] = f"{value:.4f}"
+                            self.latest_data[comp_name] = value
                         except (KeyError, IndexError):
                             pass
                 else:
-                    self.latest_data[name] = f"{entry['float_value']:.4f}"
+                    self.latest_data[name] = entry["float_value"]
 
             except KeyError:
                 # Unknown ID - skip it
