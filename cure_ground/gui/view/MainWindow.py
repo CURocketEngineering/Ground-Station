@@ -92,7 +92,7 @@ class MainWindow(QMainWindow):
                 int(self.width() * 0.30),
                 int(self.height() * 0.55),
                 int(self.width() * 0.30),
-                int(self.height() * 0.35),
+                int(self.height() * 0.40),
             )
 
     # Sidebar & Status access
