@@ -219,6 +219,10 @@ class DashboardController:
 
             now = time.time()
             if now - self._last_text_update > 0.05:  # update text at ~20 FPS max
+                # Round all numbers in status data to 2 decimal places for display
+                for key, value in status_data.items():
+                    if type(value) in [int, float]:
+                        status_data[key] = f"{value:.2f}"
                 left_text = formatter.get_left_column_text(status_data)
                 right_text = formatter.get_right_column_text(status_data)
                 self.view.get_status_display().update_text(left_text, right_text)

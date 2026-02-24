@@ -83,7 +83,7 @@ class MainWindow(QMainWindow):
         # Reposition elements
         self.sidebar.setGeometry(int(75 * w), int(80 * h), int(300 * w), int(925 * h))
         self.status_display.left_column.move(int(365 * w), int(50 * h))
-        self.status_display.right_column.move(int(675 * w), int(50 * h))
+        self.status_display.right_column.move(int(725 * w), int(50 * h))
 
         # === Graph Layout ===
         if self.merged_graph:
@@ -99,7 +99,7 @@ class MainWindow(QMainWindow):
                 int(self.width() * 0.30),
                 int(self.height() * 0.55),
                 int(self.width() * 0.30),
-                int(self.height() * 0.35),
+                int(self.height() * 0.40),
             )
 
 

@@ -24,6 +24,7 @@ class OrientationView(QWidget):
 
         # --- 3D canvas ---
         self.view = gl.GLViewWidget()
+        self.view.setBackgroundColor("w")
         self.view.setCameraPosition(distance=3)
         self.layout.addWidget(self.view)
 
@@ -31,6 +32,7 @@ class OrientationView(QWidget):
         axes = gl.GLAxisItem()
         axes.setSize(1, 1, 1)
         grid = gl.GLGridItem()
+        grid.setColor((200, 200, 200, 255))
         grid.scale(0.5, 0.5, 0.5)
         self.view.addItem(axes)
         self.view.addItem(grid)

@@ -7,7 +7,7 @@ Location: cure_ground/data_sources/radio_data_source.py
 
 import struct
 import time
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 import serial
 
 from cure_ground.core.protocols.data_names.data_name_loader import (
@@ -97,7 +97,7 @@ class RadioDataSource(DataSource):
         """Check if data source is connected."""
         return self._connected and self.ser is not None and self.ser.is_open
 
-    def get_data(self) -> Optional[Dict[str, str]]:
+    def get_data(self) -> Optional[Dict[str, Any]]:
         """
         Get latest data in StatusModel-compatible format.
 
@@ -145,11 +145,11 @@ class RadioDataSource(DataSource):
                         try:
                             comp_info = self.data_names.get_info_by_id(comp_id)
                             comp_name = comp_info["name"]
-                            self.latest_data[comp_name] = f"{value:.4f}"
+                            self.latest_data[comp_name] = value
                         except (KeyError, IndexError):
                             pass
                 else:
-                    self.latest_data[name] = f"{entry['float_value']:.4f}"
+                    self.latest_data[name] = entry["float_value"]
 
             except KeyError:
                 # Unknown ID - skip it
@@ -182,6 +182,18 @@ class RadioDataSource(DataSource):
         if len(timestamp_bytes) != 4:
             raise IOError("Failed to read timestamp")
         return struct.unpack(">I", timestamp_bytes)[0]
+
+    def _read_packet_number(self) -> int:
+        """
+        Read and parse 4-byte packet number.
+
+        Returns:
+            Packet number as integer
+        """
+        packet_num_bytes = self.ser.read(4)
+        if len(packet_num_bytes) != 4:
+            raise IOError("Failed to read packet number")
+        return struct.unpack(">I", packet_num_bytes)[0]
 
     def _parse_data_entry(self, data_id: int, data_bytes: bytes) -> Dict:
         """
@@ -226,6 +238,7 @@ class RadioDataSource(DataSource):
             List of parsed data dictionaries
         """
         packet_data = []
+        assert self.ser is not None, "Serial connection not established"
 
         while True:
             # Read ID byte
@@ -288,11 +301,15 @@ class RadioDataSource(DataSource):
             # Read timestamp
             timestamp = self._read_timestamp()
 
+            # Read packet number
+            packet_number = self._read_packet_number()
+
             # Read all data in packet
             packet_data = self._read_packet_data()
 
             return {
                 "timestamp": timestamp,
+                "packet_number": packet_number,
                 "data": packet_data,
                 "receive_time": time.time(),
             }

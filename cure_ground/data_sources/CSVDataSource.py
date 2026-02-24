@@ -5,6 +5,11 @@ from typing import Dict, Optional
 from cure_ground.data_sources.DataSource import DataSource
 from cure_ground.data_sources.LaunchDetector import LaunchDetector
 
+from cure_ground.core.protocols.data_names.data_name_loader import (
+    load_data_name_enum,
+    DataNames,
+)
+
 
 class CSVDataSource(DataSource):
     def __init__(self, csv_file_path: str):
@@ -17,6 +22,7 @@ class CSVDataSource(DataSource):
         self.data_start_timestamp = 0
         self.last_valid_values = {}
         self.trimmed_csv_path = None
+        self.data_names: DataNames = load_data_name_enum(3)
 
     def connect(self, port: str = None) -> bool:
         # Connect to CSV data source with launch detection
