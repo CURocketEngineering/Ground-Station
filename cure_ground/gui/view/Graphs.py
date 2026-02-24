@@ -82,8 +82,10 @@ class MergedGraph(BaseGraph):
         self.az_line = self.plot_widget.plot(
             pen=pg.mkPen(color="b", width=4), name="Accel Z"
         )
-
-        self.lines = [self.alt_line, self.ax_line, self.ay_line, self.az_line]
+        self.est_apogee_line = self.plot_widget.plot(
+            pen=pg.mkPen(color="c", width=4), name="Estimated Apogee"
+        )
+        self.lines = [self.alt_line, self.ax_line, self.ay_line, self.az_line, self.est_apogee_line]
 
     def _update_plot_data(self):
         # Get data from model
