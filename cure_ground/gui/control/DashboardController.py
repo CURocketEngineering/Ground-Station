@@ -1,6 +1,7 @@
 import time
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QMessageBox
+import os
 
 from cure_ground.data_sources.DataSourceFactory import DataSourceFactory
 from cure_ground.gui.model.StatusModel import StatusModel
@@ -117,8 +118,9 @@ class DashboardController:
 
             self.model.set_data_source(self.current_data_source)
             # use current time mm-dd-yy_hh-mm-ss format
+            os.makedirs("recordings", exist_ok=True)
             self.model.set_local_save_path(
-                f"data_{time.strftime('%m-%d-%y_%H-%M-%S')}.csv"
+                f"recordings/data_{time.strftime('%m-%d-%y_%H-%M-%S')}.csv"
             )
             self.connected = True
             sidebar = self.view.get_sidebar()
@@ -219,6 +221,10 @@ class DashboardController:
 
             now = time.time()
             if now - self._last_text_update > 0.05:  # update text at ~20 FPS max
+                # Round all numbers in status data to 2 decimal places for display
+                for key, value in status_data.items():
+                    if type(value) in [int, float]:
+                        status_data[key] = f"{value:.2f}"
                 left_text = formatter.get_left_column_text(status_data)
                 right_text = formatter.get_right_column_text(status_data)
                 self.view.get_status_display().update_text(left_text, right_text)
