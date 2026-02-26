@@ -1,0 +1,32 @@
+# Flight states config (v02)
+states:
+  - id: 0
+    name: STATE_UNARMED
+    description: "System safe; inhibits firing/pyros."
+  - id: 1
+    name: STATE_ARMED
+    description: "Armed; launch detection enabled."
+  - id: 2
+    name: STATE_SOFT_ASCENT
+    description: "Acceleration detected; waiting for confirmation"
+  - id: 3
+    name: STATE_ASCENT
+    description: "General ascent phase (superstate for powered/coast)."
+  - id: 4
+    name: STATE_POWERED_ASCENT
+    description: "Motor burning; thrust phase."
+  - id: 5
+    name: STATE_COAST_ASCENT
+    description: "Ballistic ascent post-burn, pre-apogee."
+  - id: 6
+    name: STATE_DESCENT
+    description: "General descent phase (superstate for chute phases)."
+  - id: 7
+    name: STATE_DROGUE_DEPLOYED
+    description: "Drogue parachute deployed."
+  - id: 8
+    name: STATE_MAIN_DEPLOYED
+    description: "Main parachute deployed."
+  - id: 9
+    name: STATE_LANDED
+    description: "Touchdown detected; flight complete."
