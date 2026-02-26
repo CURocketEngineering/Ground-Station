@@ -91,6 +91,16 @@ class RetrieveData:
         temperature = data["temp"]
         return temperature
 
+
+    """
+    get the predicted apoggee from the csv file and return it
+    """
+
+    def getApogee(self):
+        data = pd.read_csv(self.filename)
+        apogee = data["apogee"]
+        return apogee
+
     """
     print data at original time delta by setting a sleep timer based on the time delta.
     """
@@ -105,6 +115,7 @@ class RetrieveData:
         gyroZ = self.getGyroZ()
         altitude = self.getAltitude()
         temperature = self.getTemperature()
+        apogee = self.getApogee()
 
         # send data over serial port
         ser = serial.Serial("placeholder", baudrate=9600, timeout=1)
@@ -120,6 +131,7 @@ class RetrieveData:
             print("GyroZ: ", gyroZ[i])
             print("Altitude: ", altitude[i])
             print("Temperature: ", temperature[i])
+            print("Apogee: ", apogee[i])
 
             # 36 byte packet
             packet = struct.pack(
@@ -133,6 +145,7 @@ class RetrieveData:
                 gyroZ[i],
                 altitude[i],
                 temperature[i],
+                apogee[i],
             )
             ser.write(packet)
 

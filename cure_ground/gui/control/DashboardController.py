@@ -1,6 +1,7 @@
 import time
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QMessageBox
+import os
 
 from cure_ground.data_sources.DataSourceFactory import DataSourceFactory
 from cure_ground.gui.model.StatusModel import StatusModel
@@ -117,8 +118,9 @@ class DashboardController:
 
             self.model.set_data_source(self.current_data_source)
             # use current time mm-dd-yy_hh-mm-ss format
+            os.makedirs("recordings", exist_ok=True)
             self.model.set_local_save_path(
-                f"data_{time.strftime('%m-%d-%y_%H-%M-%S')}.csv"
+                f"recordings/data_{time.strftime('%m-%d-%y_%H-%M-%S')}.csv"
             )
             self.connected = True
             sidebar = self.view.get_sidebar()
@@ -287,6 +289,7 @@ class DashboardController:
 
         dropdown = self.view.get_sidebar().get_port_dropdown()
         dropdown.clear()
+        add_at_the_end = []
         if not available_ports:
             dropdown.addItem("No ports available")
         else:
@@ -294,7 +297,9 @@ class DashboardController:
                 if port in radio_ports:
                     dropdown.addItem(f"{port} (Radio)")
                 else:
-                    dropdown.addItem(port)
+                    add_at_the_end.append(port)
+            for port in add_at_the_end:
+                dropdown.addItem(port)
 
     def on_data_source_changed(self, source_name):
         source_name = source_name.lower()
