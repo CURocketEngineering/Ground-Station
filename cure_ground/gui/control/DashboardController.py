@@ -281,6 +281,7 @@ class DashboardController:
 
         dropdown = self.view.get_sidebar().get_port_dropdown()
         dropdown.clear()
+        add_at_the_end = []
         if not available_ports:
             dropdown.addItem("No ports available")
         else:
@@ -288,7 +289,9 @@ class DashboardController:
                 if port in radio_ports:
                     dropdown.addItem(f"{port} (Radio)")
                 else:
-                    dropdown.addItem(port)
+                    add_at_the_end.append(port)
+            for port in add_at_the_end:
+                dropdown.addItem(port)
 
     def on_data_source_changed(self, source_name):
         source_name = source_name.lower()
