@@ -126,6 +126,7 @@ class RadioDataSource(DataSource):
         # Update timestamp (convert from ms to seconds)
         timestamp_sec = packet["timestamp"] / 1000.0
         self.latest_data["TIMESTAMP"] = f"{timestamp_sec:.3f}"
+        self.latest_data["NUM_PACKETS_SENT"] = str(int(packet["packet_number"]))
         self.last_packet_time = time.time()
 
         # Process each data entry in the packet
