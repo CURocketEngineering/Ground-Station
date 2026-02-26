@@ -1,6 +1,7 @@
 import time
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QMessageBox
+import os
 
 from cure_ground.data_sources.DataSourceFactory import DataSourceFactory
 from cure_ground.gui.model.StatusModel import StatusModel
@@ -117,8 +118,9 @@ class DashboardController:
 
             self.model.set_data_source(self.current_data_source)
             # use current time mm-dd-yy_hh-mm-ss format
+            os.makedirs("recordings", exist_ok=True)
             self.model.set_local_save_path(
-                f"data_{time.strftime('%m-%d-%y_%H-%M-%S')}.csv"
+                f"recordings/data_{time.strftime('%m-%d-%y_%H-%M-%S')}.csv"
             )
             self.connected = True
             sidebar = self.view.get_sidebar()
