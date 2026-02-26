@@ -19,6 +19,10 @@ class GraphDataManager:
         self.accel_y = deque(maxlen=max_points)
         self.accel_z = deque(maxlen=max_points)
 
+        # Estimated apogee
+        self.est_apogee_timestamps = deque(maxlen=max_points)
+        self.est_apogee_values = deque(maxlen=max_points)
+
     # ===== ALTITUDE =====
     def add_data_point(self, altitude_value: float, timestamp: float):
         """Add a new altitude data point with timestamp in seconds"""
@@ -26,6 +30,14 @@ class GraphDataManager:
             alt_float = float(altitude_value)
             self.altitudes.append(alt_float)
             self.alt_timestamps.append(timestamp)
+        except (ValueError, TypeError):
+            pass
+
+    # ===== ESTIMATED APOGEE =====
+    def add_est_apogee_point(self, est_apogee: float, timestamp: float):
+        try:
+            self.est_apogee_timestamps.append(timestamp)
+            self.est_apogee_values.append(float(est_apogee))
         except (ValueError, TypeError):
             pass
 
@@ -59,6 +71,9 @@ class GraphDataManager:
     # ===== STATS =====
     def get_current_altitude(self) -> Optional[float]:
         return self.altitudes[-1] if self.altitudes else None
+    
+    def get_est_apogee_plot_data(self):
+        return list(self.est_apogee_timestamps), list(self.est_apogee_values)
 
     def clear_data(self):
         """Clear all stored data"""
@@ -68,6 +83,9 @@ class GraphDataManager:
         self.accel_x.clear()
         self.accel_y.clear()
         self.accel_z.clear()
+        self.est_apogee_timestamps.clear()
+        self.est_apogee_values.clear()
+
 
     def get_stats(self) -> Dict[str, float]:
         """Get basic statistics about the altitude data"""
@@ -174,6 +192,17 @@ class StatusModel:
                         break
                     except (ValueError, TypeError):
                         continue
+                    
+        # --- EST_APOGEE ---
+        est_apogee_keys = ["EST_APOGEE", "EST_APOGEE_ALT", "est_apogee"]
+        est_apogee = None
+        for key in est_apogee_keys:
+            if key in data and data[key] not in ["N/A", "", None]:
+                try:
+                    est_apogee = float(data[key])
+                    break
+                except (ValueError, TypeError):
+                    continue
 
         # --- TIMESTAMP (convert ms → s) ---
         timestamp = None
@@ -187,6 +216,10 @@ class StatusModel:
         if timestamp is not None:
             if altitude is not None:
                 self.graph_manager.add_data_point(altitude, timestamp)
+
+            if est_apogee is not None:
+                self.graph_manager.add_est_apogee_point(est_apogee, timestamp)
+
             if all(v is not None for v in (ax, ay, az)):
                 self.graph_manager.add_accel_data_point(ax, ay, az, timestamp)
 
@@ -200,6 +233,9 @@ class StatusModel:
     ) -> Tuple[List[float], List[float], List[float], List[float]]:
         """Accelerometer graph data"""
         return self.graph_manager.get_accel_plot_data()
+
+    def get_est_apogee_graph_data(self):
+        return self.graph_manager.get_est_apogee_plot_data()
 
     def get_graph_stats(self) -> Dict[str, float]:
         return self.graph_manager.get_stats()
