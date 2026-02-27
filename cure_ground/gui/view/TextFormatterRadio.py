@@ -14,8 +14,11 @@ class TextFormatterRadio:
             "accelerometer": [],
             "gyroscope": [],
             "magnetometer": [],
-            "environment": [],
+            "altimeter": [],
             "telemetry": [],
+            "microcontroller": [],
+            "estimates": [],
+            "misc": [],
         }
         for item in self.data_names.data_definitions:
             name = item["name"]
@@ -31,23 +34,37 @@ class TextFormatterRadio:
                 self.categories["magnetometer"].append(name)
 
             elif lname in ["temperature", "pressure", "altitude"]:
-                self.categories["environment"].append(name)
+                self.categories["altimeter"].append(name)
 
-            else:
+            elif lname in [
+                "current_state",
+                "cycle_rate",
+                "timestamp",
+                "state_change",
+                "flight_id",
+            ]:
+                self.categories["microcontroller"].append(name)
+
+            elif "est" in lname:
+                self.categories["estimates"].append(name)
+
+            elif lname in ["num_packets_sent"]:
                 self.categories["telemetry"].append(name)
 
-        self.categories["packets"] = ["NUM_PACKETS_SENT"]
+            else:
+                self.categories["misc"].append(name)
 
     def get_left_column_text(self, status_data):
         parts = []
-        for cat in ["accelerometer", "gyroscope", "magnetometer", "environment"]:
+        for cat in ["accelerometer", "gyroscope", "magnetometer", "altimeter"]:
             parts.append(self._format_category(cat, status_data))
         return "<br><br>".join(parts)
 
     def get_right_column_text(self, status_data):
-        telem = self._format_category("telemetry", status_data)
-        packets = self._format_category("packets", status_data)
-        return telem + "<br><br>" + packets
+        parts = []
+        for cat in ["telemetry", "microcontroller", "estimates", "misc"]:
+            parts.append(self._format_category(cat, status_data))
+        return "<br><br>".join(parts)
 
     def _format_category(self, category: str, status_data) -> str:
         lines = [f"<b>-- {category.capitalize()} --</b>"]
