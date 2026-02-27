@@ -326,41 +326,41 @@ class RadioDataSource(DataSource):
             print(f"RadioDataSource: Error reading packet: {e}")
             return None
         
-        def _update_packet_retention(self, packet_number: int):
-            """
-            Rolling 100-packet retention window.
-            1 = packet received
-            0 = packet lost
-            Updates for every packet recevied, and then looks
-            at the past 100 packets read in
-            The percentage of received packets is calculated
-            """
+    def _update_packet_retention(self, packet_number: int):
+        """
+        Rolling 100-packet retention window.
+        1 = packet received
+        0 = packet lost
+        Updates for every packet recevied, and then looks
+        at the past 100 packets read in
+        The percentage of received packets is calculated
+        """
 
-            if self._last_packet_number is None:
-                self._last_packet_number = packet_number
-                self._packet_window.append(1)
-                return
-
-            diff = packet_number - self._last_packet_number
-
-            if diff > 1:
-                # Missed packets → add zeros
-                for _ in range(diff - 1):
-                    self._packet_window.append(0)
-
-            # Current packet received
-            self._packet_window.append(1)
-
+        if self._last_packet_number is None:
             self._last_packet_number = packet_number
+            self._packet_window.append(1)
+            return
 
-            # Only calculate once window fills
-            if len(self._packet_window) == self._packet_window.maxlen:
-                self._packet_retention_ratio = (
-                    sum(self._packet_window) / self._packet_window.maxlen
-                )
-            else:
-                # Until full, show 100%
-                self._packet_retention_ratio = 1.0
+        diff = packet_number - self._last_packet_number
+
+        if diff > 1:
+            # Missed packets → add zeros
+            for _ in range(diff - 1):
+                self._packet_window.append(0)
+
+        # Current packet received
+        self._packet_window.append(1)
+
+        self._last_packet_number = packet_number
+
+        # Only calculate once window fills
+        if len(self._packet_window) == self._packet_window.maxlen:
+            self._packet_retention_ratio = (
+                sum(self._packet_window) / self._packet_window.maxlen
+            )
+        else:
+            # Until full, show 100%
+            self._packet_retention_ratio = 1.0
 
     def get_packet_retention_ratio(self) -> float:
         return self._packet_retention_ratio
