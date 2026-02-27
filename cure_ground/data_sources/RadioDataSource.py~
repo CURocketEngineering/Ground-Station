@@ -16,7 +16,6 @@ from cure_ground.core.protocols.data_names.data_name_loader import (
 )
 from cure_ground.core.protocols.states.states_loader import load_states, States
 from cure_ground.data_sources import DataSource
-from collections import deque
 
 
 class RadioDataSource(DataSource):
@@ -68,13 +67,14 @@ class RadioDataSource(DataSource):
         # Store latest packet data for get_data()
         self.latest_data: Dict[str, str] = {}
         self.last_packet_time = 0
-
-        # --- Rolling 100-packet retention tracking ---
+        
+        # --- Packet retention tracking (10-second window) ---
         self._last_packet_number: Optional[int] = None
-        self._packet_window = deque(maxlen=100)  # last 100 packet results
+        self._packets_received = 0
+        self._packets_expected = 0
+        self._window_start_time = time.time()
         self._packet_retention_ratio = 1.0
-    
-    
+
     def connect(self) -> bool:
         """
         Establish serial connection.
@@ -133,7 +133,6 @@ class RadioDataSource(DataSource):
         # Update timestamp (convert from ms to seconds)
         timestamp_sec = packet["timestamp"] / 1000.0
         self.latest_data["TIMESTAMP"] = f"{timestamp_sec:.3f}"
-        self.latest_data["NUM_PACKETS_SENT"] = str(int(packet["packet_number"]))
         self.last_packet_time = time.time()
 
         # Process each data entry in the packet
@@ -328,40 +327,42 @@ class RadioDataSource(DataSource):
             return None
         
     def _update_packet_retention(self, packet_number: int):
-        """
-        Rolling 100-packet retention window.
-        1 = packet received
-        0 = packet lost
-        Updates for every packet recevied, and then looks
-        at the past 100 packets read in
-        The percentage of received packets is calculated
-        """
+        current_time = time.time()
 
+        # First packet initialization
         if self._last_packet_number is None:
             self._last_packet_number = packet_number
-            self._packet_window.append(1)
+            self._packets_received = 1
+            self._packets_expected = 1
+            self._window_start_time = current_time
             return
 
+        # Count received
+        self._packets_received += 1
+
+        # Calculate how many packets should have arrived
         diff = packet_number - self._last_packet_number
-
-        if diff > 1:
-            # Missed packets → add zeros
-            for _ in range(diff - 1):
-                self._packet_window.append(0)
-
-        # Current packet received
-        self._packet_window.append(1)
+        if diff > 0:
+            self._packets_expected += diff
+        else:
+            # Handles reset or wrap
+            self._packets_expected += 1
 
         self._last_packet_number = packet_number
 
-        # Only calculate once window fills
-        if len(self._packet_window) == self._packet_window.maxlen:
-            self._packet_retention_ratio = (
-                sum(self._packet_window) / self._packet_window.maxlen
-            )
-        else:
-            # Until full, show 100%
-            self._packet_retention_ratio = 1.0
+        # Every 10 seconds calculate retention
+        if current_time - self._window_start_time >= 10:
+            if self._packets_expected > 0:
+                self._packet_retention_ratio = (
+                    self._packets_received / self._packets_expected
+                )
+            else:
+                self._packet_retention_ratio = 1.0
+
+            # Reset window
+            self._packets_received = 0
+            self._packets_expected = 0
+            self._window_start_time = current_time
 
     def get_packet_retention_ratio(self) -> float:
         return self._packet_retention_ratio

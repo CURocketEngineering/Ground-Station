@@ -230,6 +230,14 @@ class DashboardController:
                 self.view.get_status_display().update_text(left_text, right_text)
                 self._last_text_update = now
 
+        # === Update packet retention bar ===
+        if hasattr(self.current_data_source, "get_packet_retention_ratio"):
+            retention_ratio = self.current_data_source.get_packet_retention_ratio()
+        else:
+            retention_ratio = 1.0  # Default to 100% if not supported
+
+        self.view.get_packet_loss_indicator().set_packet_loss(retention_ratio)
+
     # --------------------- HELPERS ---------------------
     def clear_plm(self):
         if not self.connected:
