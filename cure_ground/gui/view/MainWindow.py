@@ -27,9 +27,10 @@ class MainWindow(QMainWindow):
         # UI components
         self.sidebar = Sidebar(self, self.font_family)
         self.status_display = StatusDisplay(self, self.font_family)
-        # After creating status_display
+
+        # Create packet loss indicator and hide it till graphs are shown
         self.packet_loss_indicator = PacketLossIndicator(self)
-        self.packet_loss_indicator.show()  # make sure it’s visible
+        self.packet_loss_indicator.hide()  # start hidden
 
 
         # Graph placeholders (DashboardController will assign)
@@ -103,16 +104,16 @@ class MainWindow(QMainWindow):
             )
 
 
-        # === Packet Loss Indicator Layout ===
-        if hasattr(self, "packet_loss_indicator") and self.packet_loss_indicator:
-            bar_height = self.packet_loss_indicator.height()
+        # === Packet Loss Indicator ===
+        if self.packet_loss_indicator:
+
             self.packet_loss_indicator.setGeometry(
-                0,                     # x = left edge
-                self.height() - bar_height,  # y = bottom edge
-                self.width(),          # full width
-                bar_height             # fixed height
+                int(self.width() * 0.65),  # horizontal shift
+                int(self.height() * 0.88),  # vertical shift
+                int(self.width() * 0.30),   #  width
+                int(self.height() * 0.035), #  height
             )
-            self.packet_loss_indicator.raise_()
+
 
 
 
@@ -139,7 +140,7 @@ class MainWindow(QMainWindow):
             graph_widget.raise_()
 
     def toggle_graph_visual_visibility(self, visible):
-        for widget in [self.merged_graph, self.orientation_visual]:
+        for widget in [self.merged_graph, self.orientation_visual, self.packet_loss_indicator]:
             if widget:
                 widget.setVisible(visible)
                 if visible:
