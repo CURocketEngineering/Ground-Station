@@ -16,6 +16,7 @@ from cure_ground.core.protocols.data_names.data_name_loader import (
 )
 from cure_ground.core.protocols.states.states_loader import load_states, States
 from cure_ground.data_sources import DataSource
+from collections import deque
 
 
 class RadioDataSource(DataSource):
@@ -68,6 +69,12 @@ class RadioDataSource(DataSource):
         self.latest_data: Dict[str, str] = {}
         self.last_packet_time = 0
 
+        # --- Rolling 100-packet retention tracking ---
+        self._last_packet_number: Optional[int] = None
+        self._packet_window = deque(maxlen=100)  # last 100 packet results
+        self._packet_retention_ratio = 1.0
+    
+    
     def connect(self) -> bool:
         """
         Establish serial connection.
@@ -304,6 +311,7 @@ class RadioDataSource(DataSource):
 
             # Read packet number
             packet_number = self._read_packet_number()
+            self._update_packet_retention(packet_number)
 
             # Read all data in packet
             packet_data = self._read_packet_data()
@@ -318,6 +326,45 @@ class RadioDataSource(DataSource):
         except Exception as e:
             print(f"RadioDataSource: Error reading packet: {e}")
             return None
+        
+    def _update_packet_retention(self, packet_number: int):
+        """
+        Rolling 100-packet retention window.
+        1 = packet received
+        0 = packet lost
+        Updates for every packet recevied, and then looks
+        at the past 100 packets read in
+        The percentage of received packets is calculated
+        """
+
+        if self._last_packet_number is None:
+            self._last_packet_number = packet_number
+            self._packet_window.append(1)
+            return
+
+        diff = packet_number - self._last_packet_number
+
+        if diff > 1:
+            # Missed packets → add zeros
+            for _ in range(diff - 1):
+                self._packet_window.append(0)
+
+        # Current packet received
+        self._packet_window.append(1)
+
+        self._last_packet_number = packet_number
+
+        # Only calculate once window fills
+        if len(self._packet_window) == self._packet_window.maxlen:
+            self._packet_retention_ratio = (
+                sum(self._packet_window) / self._packet_window.maxlen
+            )
+        else:
+            # Until full, show 100%
+            self._packet_retention_ratio = 1.0
+
+    def get_packet_retention_ratio(self) -> float:
+        return self._packet_retention_ratio
 
     def get_available_ports(self) -> List[str]:
         """
