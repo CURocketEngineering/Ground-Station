@@ -73,8 +73,7 @@ class RadioDataSource(DataSource):
         self._last_packet_number: Optional[int] = None
         self._packet_window = deque(maxlen=100)  # last 100 packet results
         self._packet_retention_ratio = 1.0
-    
-    
+
     def connect(self) -> bool:
         """
         Establish serial connection.
@@ -130,9 +129,8 @@ class RadioDataSource(DataSource):
         Args:
             packet: Raw packet from _read_packet()
         """
-        # Update timestamp (convert from ms to seconds)
-        timestamp_sec = packet["timestamp"] / 1000.0
-        self.latest_data["TIMESTAMP"] = f"{timestamp_sec:.3f}"
+        timestamp_ms = packet["timestamp"]
+        self.latest_data["TIMESTAMP"] = f"{timestamp_ms}"
         self.latest_data["NUM_PACKETS_SENT"] = str(int(packet["packet_number"]))
         self.last_packet_time = time.time()
 
@@ -326,7 +324,7 @@ class RadioDataSource(DataSource):
         except Exception as e:
             print(f"RadioDataSource: Error reading packet: {e}")
             return None
-        
+
     def _update_packet_retention(self, packet_number: int):
         """
         Rolling 100-packet retention window.
