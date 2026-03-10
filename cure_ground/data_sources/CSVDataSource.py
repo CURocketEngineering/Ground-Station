@@ -1,7 +1,7 @@
 import csv
 import time
 import os
-from typing import Dict, Optional
+from typing import Dict, Optional, List, Tuple
 from cure_ground.data_sources.DataSource import DataSource
 from cure_ground.data_sources.LaunchDetector import LaunchDetector
 from cure_ground.data_sources.timestamp_utils import (
@@ -30,6 +30,11 @@ class CSVDataSource(DataSource):
         self.last_valid_values = {}
         self.trimmed_csv_path = None
         self.data_names: DataNames = load_data_name_enum(3)
+        self.protocol_field_names: List[str] = []
+        self.group_component_mapping: Dict[str, List[str]] = {}
+        self.csv_column_mapping: Dict[str, str] = {}
+        self.extra_csv_columns: List[str] = []
+        self._initialize_protocol_mappings()
 
     def connect(self, port: str = None) -> bool:
         # Connect to CSV data source with launch detection
@@ -62,6 +67,7 @@ class CSVDataSource(DataSource):
             # Load the CSV data (trimmed or original)
             with open(used_csv_path, "r", newline="") as csvfile:
                 reader = csv.DictReader(csvfile)
+                self._build_csv_column_mapping(reader.fieldnames or [])
                 self.data_rows = list(reader)
 
             if not self.data_rows:
@@ -83,6 +89,81 @@ class CSVDataSource(DataSource):
         except Exception as e:
             print(f"Error loading CSV: {e}")
             return False
+
+    def _initialize_protocol_mappings(self) -> None:
+        self.protocol_field_names = []
+        self.group_component_mapping = {}
+
+        for item in self.data_names.data_definitions:
+            name = item["name"]
+            self.protocol_field_names.append(name)
+
+            if item.get("type") == "group":
+                component_names = []
+                for component_id in item.get("data", []):
+                    try:
+                        component_names.append(self.data_names.get_name(component_id))
+                    except KeyError:
+                        continue
+                self.group_component_mapping[name] = component_names
+
+    @staticmethod
+    def _normalize_column_name(name: str) -> str:
+        return str(name).strip().lower()
+
+    def _build_csv_column_mapping(self, headers: List[str]) -> None:
+        self.csv_column_mapping = {}
+        self.extra_csv_columns = []
+
+        normalized_headers = {}
+        for header in headers:
+            normalized_headers[self._normalize_column_name(header)] = header
+
+        for item in self.data_names.data_definitions:
+            name = item["name"]
+            normalized_name = self._normalize_column_name(name)
+            mapped_header = normalized_headers.get(normalized_name)
+
+            if mapped_header is None:
+                normalized_id = self._normalize_column_name(str(item["id"]))
+                mapped_header = normalized_headers.get(normalized_id)
+
+            if mapped_header is not None:
+                self.csv_column_mapping[name] = mapped_header
+
+        mapped_headers = set(self.csv_column_mapping.values())
+        self.extra_csv_columns = [
+            header for header in headers if header not in mapped_headers
+        ]
+
+    def _read_protocol_value(
+        self, row: Dict[str, str], protocol_name: str
+    ) -> Tuple[Optional[str], bool]:
+        column_name = self.csv_column_mapping.get(protocol_name, protocol_name)
+        value = row.get(column_name)
+        if value is None:
+            return None, False
+
+        cleaned_value = str(value).strip()
+        if cleaned_value == "":
+            return None, False
+        return cleaned_value, True
+
+    def _derive_group_value(
+        self, data: Dict[str, str], group_name: str
+    ) -> Optional[str]:
+        component_names = self.group_component_mapping.get(group_name, [])
+        if not component_names:
+            return None
+
+        component_values = []
+        for component_name in component_names:
+            component_value = data.get(component_name)
+            if component_value in (None, "", "N/A"):
+                return None
+            component_values.append(component_value)
+
+        return f"[{', '.join(component_values)}]"
 
     def disconnect(self) -> None:
         # Disconnect from CSV data source
@@ -197,22 +278,36 @@ class CSVDataSource(DataSource):
         ):
             current_row = self.processed_rows[self.current_index]
 
-            # Clean the data for display
-            for key, value in current_row.items():
-                if key in ["original_timestamp", "normalized_timestamp"]:
-                    continue  # Skip internal fields
-
-                # If value exists and is not empty, use it and update cache
-                if value is not None and value != "":
-                    cleaned_value = str(value).strip()
-                    cleaned_data[key] = cleaned_value
-                    self.last_valid_values[key] = cleaned_value  # Update cache
-                # If value is missing but we have a cached value, use the cached value
-                elif key in self.last_valid_values:
-                    cleaned_data[key] = self.last_valid_values[key]
-                # Otherwise, use 'N/A'
+            # Populate protocol fields using canonical DataNames keys.
+            for protocol_name in self.protocol_field_names:
+                value, has_value = self._read_protocol_value(current_row, protocol_name)
+                if has_value:
+                    cleaned_data[protocol_name] = value
+                    self.last_valid_values[protocol_name] = value
+                elif protocol_name in self.last_valid_values:
+                    cleaned_data[protocol_name] = self.last_valid_values[protocol_name]
                 else:
-                    cleaned_data[key] = "N/A"
+                    cleaned_data[protocol_name] = "N/A"
+
+            # Backfill group values from component values if group columns are blank.
+            for group_name in self.group_component_mapping:
+                if cleaned_data.get(group_name) in (None, "", "N/A"):
+                    derived_group = self._derive_group_value(cleaned_data, group_name)
+                    if derived_group is not None:
+                        cleaned_data[group_name] = derived_group
+                        self.last_valid_values[group_name] = derived_group
+
+            # Preserve any non-protocol CSV columns so existing custom fields still flow through.
+            for extra_column in self.extra_csv_columns:
+                value = current_row.get(extra_column)
+                if value is not None and str(value).strip() != "":
+                    cleaned_value = str(value).strip()
+                    cleaned_data[extra_column] = cleaned_value
+                    self.last_valid_values[extra_column] = cleaned_value
+                elif extra_column in self.last_valid_values:
+                    cleaned_data[extra_column] = self.last_valid_values[extra_column]
+                else:
+                    cleaned_data[extra_column] = "N/A"
 
             # Include the original timestamp in the returned data
             cleaned_data["TIMESTAMP"] = str(int(current_row["original_timestamp"]))

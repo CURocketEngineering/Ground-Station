@@ -1,4 +1,5 @@
 import time
+import math
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QMessageBox
 import os
@@ -10,8 +11,6 @@ from cure_ground.gui.view import MainWindow
 from cure_ground.gui.view.OrientationVisual import OrientationView
 from cure_ground.gui.view.Graphs import MergedGraph
 from cure_ground.gui.view.TextFormatter import TextFormatter
-from cure_ground.gui.view.TextFormatterCSV import TextFormatterCSV
-from cure_ground.gui.view.TextFormatterRadio import TextFormatterRadio
 
 
 class DashboardController:
@@ -19,8 +18,6 @@ class DashboardController:
         self.view: MainWindow = view
         self.model = StatusModel()
         self.text_formatter = TextFormatter()
-        self.text_formatter_csv = TextFormatterCSV()
-        self.text_formatter_radio = TextFormatterRadio()
         self.streaming = False
         self.timer = QTimer()
         self.current_data_source = None
@@ -223,29 +220,53 @@ class DashboardController:
         self.view.resizeEvent(None)
 
     # --------------------- STATUS UPDATES ---------------------
+    @staticmethod
+    def _format_display_value(value):
+        if value in (None, "", "N/A"):
+            return "N/A"
+
+        numeric_value = None
+        if isinstance(value, (int, float)):
+            numeric_value = float(value)
+        elif isinstance(value, str):
+            stripped = value.strip()
+            if not stripped or stripped.startswith("["):
+                return value
+            try:
+                numeric_value = float(stripped)
+            except ValueError:
+                return value
+        else:
+            return value
+
+        if not math.isfinite(numeric_value):
+            return "N/A"
+
+        if abs(numeric_value - round(numeric_value)) < 1e-9:
+            return str(int(round(numeric_value)))
+
+        return f"{numeric_value:.2f}"
+
     def update_status(self):
         if not self.connected or not self.current_data_source:
             return
 
         if self.model.update_from_data_source():
             status_data = self.model.get_all_data()
-            source_type = self.get_current_data_source_type()
-
-            if source_type == "csv":
-                formatter = self.text_formatter_csv
-            elif source_type == "radio":
-                formatter = self.text_formatter_radio
-            else:
-                formatter = self.text_formatter
 
             now = time.time()
             if now - self._last_text_update > 0.05:  # update text at ~20 FPS max
-                # Round all numbers in status data to 2 decimal places for display
-                for key, value in status_data.items():
-                    if type(value) in [int, float]:
-                        status_data[key] = f"{value:.2f}"
-                left_text = formatter.get_left_column_text(status_data)
-                right_text = formatter.get_right_column_text(status_data)
+                # Round numeric telemetry values (including numeric strings) for display.
+                display_status_data = {
+                    key: self._format_display_value(value)
+                    for key, value in status_data.items()
+                }
+                left_text = self.text_formatter.get_left_column_text(
+                    display_status_data
+                )
+                right_text = self.text_formatter.get_right_column_text(
+                    display_status_data
+                )
                 self.view.get_status_display().update_text(left_text, right_text)
                 self._last_text_update = now
 
