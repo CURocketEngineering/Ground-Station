@@ -4,6 +4,12 @@ import os
 from typing import Dict, Optional
 from cure_ground.data_sources.DataSource import DataSource
 from cure_ground.data_sources.LaunchDetector import LaunchDetector
+from cure_ground.data_sources.timestamp_utils import (
+    TIMESTAMP_KEYS,
+    infer_timestamp_multiplier_to_ms,
+    parse_timestamp_value,
+    to_milliseconds,
+)
 
 from cure_ground.core.protocols.data_names.data_name_loader import (
     load_data_name_enum,
@@ -20,6 +26,7 @@ class CSVDataSource(DataSource):
         self.current_index = 0
         self.playback_start_time = 0
         self.data_start_timestamp = 0
+        self.timestamp_multiplier_to_ms = 1
         self.last_valid_values = {}
         self.trimmed_csv_path = None
         self.data_names: DataNames = load_data_name_enum(3)
@@ -68,11 +75,6 @@ class CSVDataSource(DataSource):
 
             self.connected = True
 
-            if self.processed_rows:
-                first_ts = self.processed_rows[0]["original_timestamp"]
-                last_ts = self.processed_rows[-1]["original_timestamp"]
-                (last_ts - first_ts) / 1000.0
-
             return True
 
         except FileNotFoundError:
@@ -91,6 +93,7 @@ class CSVDataSource(DataSource):
         self.current_index = 0
         self.playback_start_time = 0
         self.data_start_timestamp = 0
+        self.timestamp_multiplier_to_ms = 1
         self.last_valid_values = {}
 
         # Clean up trimmed CSV file if it exists
@@ -119,31 +122,46 @@ class CSVDataSource(DataSource):
             print("No valid timestamps found in CSV")
             return
 
+        self.timestamp_multiplier_to_ms = infer_timestamp_multiplier_to_ms(
+            timestamp for timestamp, _ in valid_rows
+        )
+        if self.timestamp_multiplier_to_ms != 1:
+            print(
+                "CSVDataSource: Detected second-based timestamps, converting to milliseconds"
+            )
+        else:
+            print("CSVDataSource: Detected millisecond-based timestamps")
+
+        timestamp_ms_rows = [
+            (
+                to_milliseconds(timestamp, self.timestamp_multiplier_to_ms),
+                row,
+            )
+            for timestamp, row in valid_rows
+        ]
+
         # Sort by timestamp to ensure chronological order
-        valid_rows.sort(key=lambda x: x[0])
+        timestamp_ms_rows.sort(key=lambda x: x[0])
 
         # Find the minimum timestamp to use as baseline
-        self.data_start_timestamp = valid_rows[0][0]
+        self.data_start_timestamp = timestamp_ms_rows[0][0]
 
         # Create processed rows with normalized timestamps
-        for timestamp, row in valid_rows:
+        for timestamp_ms, row in timestamp_ms_rows:
             processed_row = row.copy()
-            processed_row["original_timestamp"] = timestamp
+            processed_row["original_timestamp"] = timestamp_ms
             processed_row["normalized_timestamp"] = (
-                timestamp - self.data_start_timestamp
+                timestamp_ms - self.data_start_timestamp
             )
             self.processed_rows.append(processed_row)
 
     def _extract_timestamp(self, row: Dict[str, str]) -> Optional[float]:
         # Extract timestamp from row
-        timestamp_keys = ["TIMESTAMP", "timestamp", "Timestamp"]
-
-        for key in timestamp_keys:
-            if key in row and row[key] and row[key] != "N/A":
-                try:
-                    return float(row[key])
-                except (ValueError, TypeError):
-                    continue
+        for key in TIMESTAMP_KEYS:
+            if key in row:
+                timestamp = parse_timestamp_value(row[key])
+                if timestamp is not None:
+                    return timestamp
         return None
 
     def get_data(self) -> Optional[Dict[str, str]]:
@@ -197,7 +215,7 @@ class CSVDataSource(DataSource):
                     cleaned_data[key] = "N/A"
 
             # Include the original timestamp in the returned data
-            cleaned_data["TIMESTAMP"] = str(current_row["original_timestamp"])
+            cleaned_data["TIMESTAMP"] = str(int(current_row["original_timestamp"]))
 
             self.current_index += 1
             data_available = True

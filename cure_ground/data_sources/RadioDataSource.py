@@ -132,7 +132,7 @@ class RadioDataSource(DataSource):
         timestamp_ms = packet["timestamp"]
         self.latest_data["TIMESTAMP"] = f"{timestamp_ms}"
         self.latest_data["NUM_PACKETS_SENT"] = str(int(packet["packet_number"]))
-        self.last_packet_time = time.time()
+        self.last_packet_time = int(time.time() * 1000)
 
         # Process each data entry in the packet
         for entry in packet["data"]:
@@ -318,7 +318,7 @@ class RadioDataSource(DataSource):
                 "timestamp": timestamp,
                 "packet_number": packet_number,
                 "data": packet_data,
-                "receive_time": time.time(),
+                "receive_time": int(time.time() * 1000),
             }
 
         except Exception as e:
