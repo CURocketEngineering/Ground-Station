@@ -290,6 +290,10 @@ class StatusModel:
         except Exception as e:
             print(f"Error writing CSV header to {self.save_path}: {e}")
 
+    def clear_local_save_path(self):
+        self.save_path = None
+        self.save_headers = []
+
     def update_from_data_source(self) -> bool:
         if not self.data_source or not self.data_source.is_connected():
             return False

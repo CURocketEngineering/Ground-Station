@@ -2,6 +2,7 @@ import time
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QMessageBox
 import os
+from typing import Optional
 
 from cure_ground.data_sources.DataSourceFactory import DataSourceFactory
 from cure_ground.gui.model.StatusModel import StatusModel
@@ -31,8 +32,8 @@ class DashboardController:
         self.merged_graph = None
         self.orientation_visual = None
 
-        # CSV path only used for CSV sources
-        self.csv_file_path = "cure_ground/gui/resources/OldData.csv"
+        self.csv_recordings_dir = "recordings"
+        self.csv_file_path: Optional[str] = None
 
         self.setup_connections()
         self.refresh_ports()
@@ -43,11 +44,14 @@ class DashboardController:
         sidebar.get_data_source_combo().currentTextChanged.connect(
             self.on_data_source_changed
         )
-        sidebar.get_refresh_button().clicked.connect(self.refresh_ports)
+        sidebar.get_refresh_button().clicked.connect(self.refresh_sidebar_selector)
         sidebar.get_connect_button().clicked.connect(self.toggle_connection_status)
         sidebar.get_live_update_button().clicked.connect(self.toggle_streaming)
         sidebar.get_graph_button().clicked.connect(self.toggle_graph)
         sidebar.get_clear_plm_button().clicked.connect(self.clear_plm)
+        sidebar.get_port_dropdown().currentIndexChanged.connect(
+            self.on_csv_file_selected
+        )
         self.timer.timeout.connect(self.update_status)
         sidebar.get_clear_graphs_button().clicked.connect(self.clear_graphs)
 
@@ -77,6 +81,15 @@ class DashboardController:
             source_type = self.get_current_data_source_type()
 
             if source_type == "csv":
+                self.csv_file_path = self.get_selected_csv_file()
+                if not self.csv_file_path:
+                    QMessageBox.warning(
+                        self.view,
+                        "Connection Error",
+                        f"No CSV files found in {self.csv_recordings_dir}",
+                    )
+                    return False
+
                 self.current_data_source = DataSourceFactory.create_data_source(
                     "csv", csv_file_path=self.csv_file_path
                 )
@@ -117,11 +130,17 @@ class DashboardController:
                 return False
 
             self.model.set_data_source(self.current_data_source)
-            # use current time mm-dd-yy_hh-mm-ss format
-            os.makedirs("recordings", exist_ok=True)
-            self.model.set_local_save_path(
-                f"recordings/data_{time.strftime('%m-%d-%y_%H-%M-%S')}.csv"
-            )
+            if source_type == "csv":
+                self.model.clear_local_save_path()
+            else:
+                # use current time mm-dd-yy_hh-mm-ss format
+                os.makedirs(self.csv_recordings_dir, exist_ok=True)
+                self.model.set_local_save_path(
+                    os.path.join(
+                        self.csv_recordings_dir,
+                        f"data_{time.strftime('%m-%d-%y_%H-%M-%S')}.csv",
+                    )
+                )
             self.connected = True
             sidebar = self.view.get_sidebar()
             sidebar.get_data_source_combo().setEnabled(False)
@@ -278,6 +297,31 @@ class DashboardController:
         port_text = sidebar.get_port_dropdown().currentText()
         return port_text.split(" (")[0] if " (" in port_text else port_text
 
+    def get_selected_csv_file(self) -> Optional[str]:
+        dropdown = self.view.get_sidebar().get_port_dropdown()
+        selected_path = dropdown.currentData()
+        if isinstance(selected_path, str) and os.path.isfile(selected_path):
+            return selected_path
+
+        selected_name = dropdown.currentText().strip()
+        if not selected_name or selected_name == "No CSV files found":
+            return None
+
+        fallback_path = os.path.join(self.csv_recordings_dir, selected_name)
+        return fallback_path if os.path.isfile(fallback_path) else None
+
+    def _get_file_sort_timestamp(self, file_path: str) -> float:
+        file_stats = os.stat(file_path)
+        # st_birthtime is used when available; fall back to mtime on systems that
+        # do not expose file creation time.
+        return getattr(file_stats, "st_birthtime", file_stats.st_mtime)
+
+    def refresh_sidebar_selector(self):
+        if self.get_current_data_source_type() == "csv":
+            self.refresh_csv_files()
+        else:
+            self.refresh_ports()
+
     def refresh_ports(self):
         from cure_ground.data_sources import SerialDataSource
 
@@ -301,21 +345,43 @@ class DashboardController:
             for port in add_at_the_end:
                 dropdown.addItem(port)
 
+    def refresh_csv_files(self):
+        os.makedirs(self.csv_recordings_dir, exist_ok=True)
+        csv_files = []
+        for filename in os.listdir(self.csv_recordings_dir):
+            if not filename.lower().endswith(".csv"):
+                continue
+            file_path = os.path.join(self.csv_recordings_dir, filename)
+            if os.path.isfile(file_path):
+                csv_files.append(
+                    (self._get_file_sort_timestamp(file_path), filename, file_path)
+                )
+
+        csv_files.sort(key=lambda row: (row[0], row[1].lower()), reverse=True)
+        dropdown = self.view.get_sidebar().get_port_dropdown()
+        dropdown.clear()
+
+        if not csv_files:
+            self.csv_file_path = None
+            dropdown.addItem("No CSV files found")
+            return
+
+        for _, filename, file_path in csv_files:
+            dropdown.addItem(filename, userData=file_path)
+        self.csv_file_path = self.get_selected_csv_file()
+
+    def on_csv_file_selected(self, _index: int):
+        if self.get_current_data_source_type() != "csv":
+            return
+        self.csv_file_path = self.get_selected_csv_file()
+
     def on_data_source_changed(self, source_name):
         source_name = source_name.lower()
         sidebar = self.view.get_sidebar()
+
         if source_name == "csv":
-            sidebar.get_port_dropdown().hide()
-            for i in range(sidebar.layout().count()):
-                widget = sidebar.layout().itemAt(i).widget()
-                if widget and hasattr(widget, "text") and widget.text() == "COM Port:":
-                    widget.hide()
-        else:
-            sidebar.get_port_dropdown().show()
-            for i in range(sidebar.layout().count()):
-                widget = sidebar.layout().itemAt(i).widget()
-                if widget and hasattr(widget, "text") and widget.text() == "COM Port:":
-                    widget.show()
+            self.refresh_csv_files()
+        elif source_name in {"radio", "serial"}:
             self.refresh_ports()
 
         if self.connected:
