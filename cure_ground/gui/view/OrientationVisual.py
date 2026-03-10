@@ -50,52 +50,66 @@ class OrientationView(QWidget):
         self.target_roll = 0.0
         self.smooth_factor = 0.1
 
-        # Timer for smooth updates (~60 FPS)
-        self.timer = QTimer()
-        self.timer.timeout.connect(self._update_orientation)
-        self.timer.start(100)
+        # Initialize filter before starting the update timer.
+        self.kf = KalmanFilter()
 
         # Initialize sensor data safely
         self._init_sensor_data()
 
-        self.kf = KalmanFilter()
+        # Timer for smooth updates (~60 FPS)
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self._update_orientation)
+        self.timer.start(100)
+
+    @staticmethod
+    def _safe_float(value, default=0.0):
+        if value in (None, "", "N/A"):
+            return default
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return default
 
     def _init_sensor_data(self):
         data = getattr(self.status_model, "status_data", {})
 
         # Safely convert any strings to floats
         self.accel = {
-            "x": float(data.get("ACCELEROMETER_X", 0)),
-            "y": float(data.get("ACCELEROMETER_Y", 0)),
-            "z": float(data.get("ACCELEROMETER_Z", 0)),
+            "x": self._safe_float(data.get("ACCELEROMETER_X", 0)),
+            "y": self._safe_float(data.get("ACCELEROMETER_Y", 0)),
+            "z": self._safe_float(data.get("ACCELEROMETER_Z", 0)),
         }
         self.gyro = {
-            "x": float(data.get("GYROSCOPE_X", 0)),
-            "y": float(data.get("GYROSCOPE_Y", 0)),
-            "z": float(data.get("GYROSCOPE_Z", 0)),
+            "x": self._safe_float(data.get("GYROSCOPE_X", 0)),
+            "y": self._safe_float(data.get("GYROSCOPE_Y", 0)),
+            "z": self._safe_float(data.get("GYROSCOPE_Z", 0)),
         }
-        self.timestamp = float(data.get("TIMESTAMP", 0))
+        self.timestamp = self._safe_float(data.get("TIMESTAMP", 0))
 
     def _update_orientation(self):
+        # Defensive guard in case an event reaches this callback before full init.
+        if not hasattr(self, "kf"):
+            self.kf = KalmanFilter()
+
         # Get latest sensor data
         data = getattr(self.status_model, "status_data", {})
 
         # Convert to floats safely
         accel = np.array(
             [
-                float(data.get("ACCELEROMETER_X", 0)),
-                float(data.get("ACCELEROMETER_Y", 0)),
-                float(data.get("ACCELEROMETER_Z", 0)),
+                self._safe_float(data.get("ACCELEROMETER_X", 0)),
+                self._safe_float(data.get("ACCELEROMETER_Y", 0)),
+                self._safe_float(data.get("ACCELEROMETER_Z", 0)),
             ]
         )
         gyro = np.array(
             [
-                float(data.get("GYROSCOPE_X", 0)),
-                float(data.get("GYROSCOPE_Y", 0)),
-                float(data.get("GYROSCOPE_Z", 0)),
+                self._safe_float(data.get("GYROSCOPE_X", 0)),
+                self._safe_float(data.get("GYROSCOPE_Y", 0)),
+                self._safe_float(data.get("GYROSCOPE_Z", 0)),
             ]
         )
-        timestamp = float(data.get("TIMESTAMP", 0))
+        timestamp = self._safe_float(data.get("TIMESTAMP", 0))
 
         # Run Kalman filter step
         result = self.kf.step(accel, gyro, timestamp)
