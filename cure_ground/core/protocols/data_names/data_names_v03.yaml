@@ -114,3 +114,20 @@ data_names:
     name: NUM_PACKETS_SENT
     id: 24
     unit: "packets"
+  - type: single
+    name: PITCH
+    id: 25
+    unit: "°"
+  - type: single
+    name: ROLL
+    id: 26
+    unit: "°"
+  - type: single
+    name: YAW
+    id: 27
+    unit: "°"
+  - type: group
+    name: ORIENTATION
+    id: 120
+    unit: "°"
+    data: [25, 26, 27]
