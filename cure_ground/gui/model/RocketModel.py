@@ -11,8 +11,8 @@ class RocketModel:
     def __init__(
         self,
         radius=0.1,
-        body_height=1.0,
-        nose_height=0.3,
+        body_height=0.75,
+        nose_height=0.1,
         fin_height=0.15,
         fin_thickness=0.02,
         segments=64,
@@ -150,7 +150,7 @@ class RocketModel:
         faces = np.array(faces)
 
         # ---------------- Base Colors ----------------
-        body_color = np.array([0.2, 0.45, 0.95, 1.0])
+        body_color = np.array([0.96, 0.40, 0.00, 1.0])
         nose_color = np.array([0.9, 0.25, 0.2, 1.0])
         nozzle_color = np.array([0.3, 0.3, 0.3, 1.0])
         colors = np.tile(body_color, (len(faces), 1))

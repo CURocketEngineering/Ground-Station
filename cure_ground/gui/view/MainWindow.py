@@ -5,6 +5,9 @@ from PyQt6.QtCore import Qt
 from cure_ground.gui.view.Sidebar import Sidebar
 from cure_ground.gui.view.StatusDisplay import StatusDisplay
 
+from cure_ground.gui.view.OrientationVisual import OrientationView
+from cure_ground.gui.view.PacketLossIndicator import PacketLossIndicator
+
 
 class MainWindow(QMainWindow):
     BASE_WIDTH = 1920
@@ -24,6 +27,11 @@ class MainWindow(QMainWindow):
         # UI components
         self.sidebar = Sidebar(self, self.font_family)
         self.status_display = StatusDisplay(self, self.font_family)
+
+        # Create packet loss indicator and hide it till graphs are shown
+        self.packet_loss_indicator = PacketLossIndicator(self)
+        self.packet_loss_indicator.hide()  # start hidden
+
 
         # Graph placeholders (DashboardController will assign)
         self.merged_graph = None
@@ -76,7 +84,7 @@ class MainWindow(QMainWindow):
         # Reposition elements
         self.sidebar.setGeometry(int(75 * w), int(80 * h), int(300 * w), int(925 * h))
         self.status_display.left_column.move(int(365 * w), int(50 * h))
-        self.status_display.right_column.move(int(675 * w), int(50 * h))
+        self.status_display.right_column.move(int(725 * w), int(50 * h))
 
         # === Graph Layout ===
         if self.merged_graph:
@@ -92,8 +100,23 @@ class MainWindow(QMainWindow):
                 int(self.width() * 0.30),
                 int(self.height() * 0.55),
                 int(self.width() * 0.30),
-                int(self.height() * 0.35),
+                int(self.height() * 0.40),
             )
+
+
+        # === Packet Loss Indicator ===
+        if self.packet_loss_indicator:
+
+            self.packet_loss_indicator.setGeometry(
+                int(self.width() * 0.65),  # horizontal shift
+                int(self.height() * 0.88),  # vertical shift
+                int(self.width() * 0.30),   #  width
+                int(self.height() * 0.035), #  height
+            )
+
+
+
+
 
     # Sidebar & Status access
     def get_sidebar(self):
@@ -117,8 +140,12 @@ class MainWindow(QMainWindow):
             graph_widget.raise_()
 
     def toggle_graph_visual_visibility(self, visible):
-        for widget in [self.merged_graph, self.orientation_visual]:
+        for widget in [self.merged_graph, self.orientation_visual, self.packet_loss_indicator]:
             if widget:
                 widget.setVisible(visible)
                 if visible:
                     widget.raise_()
+
+    def get_packet_loss_indicator(self):
+        return self.packet_loss_indicator
+

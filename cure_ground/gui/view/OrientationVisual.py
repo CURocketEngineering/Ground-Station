@@ -24,6 +24,7 @@ class OrientationView(QWidget):
 
         # --- 3D canvas ---
         self.view = gl.GLViewWidget()
+        self.view.setBackgroundColor("w")
         self.view.setCameraPosition(distance=3)
         self.layout.addWidget(self.view)
 
@@ -31,6 +32,7 @@ class OrientationView(QWidget):
         axes = gl.GLAxisItem()
         axes.setSize(1, 1, 1)
         grid = gl.GLGridItem()
+        grid.setColor((200, 200, 200, 255))
         grid.scale(0.5, 0.5, 0.5)
         self.view.addItem(axes)
         self.view.addItem(grid)
@@ -48,15 +50,25 @@ class OrientationView(QWidget):
         self.target_roll = 0.0
         self.smooth_factor = 0.1
 
-        # Timer for smooth updates (~60 FPS)
-        self.timer = QTimer()
-        self.timer.timeout.connect(self._update_orientation)
-        self.timer.start(100)
+        # Initialize filter before starting the update timer.
+        self.kf = KalmanFilter()
 
         # Initialize sensor data safely
         self._init_sensor_data()
 
-        self.kf = KalmanFilter()
+        # Timer for smooth updates (~60 FPS)
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self._update_orientation)
+        self.timer.start(100)
+
+    @staticmethod
+    def _safe_float(value, default=0.0):
+        if value in (None, "", "N/A"):
+            return default
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return default
 
     def _init_sensor_data(self):
         data = getattr(self.status_model, "status_data", {})
@@ -71,6 +83,10 @@ class OrientationView(QWidget):
         self.timestamp = float(data.get("TIMESTAMP", 0))
 
     def _update_orientation(self):
+        # Defensive guard in case an event reaches this callback before full init.
+        if not hasattr(self, "kf"):
+            self.kf = KalmanFilter()
+
         # Get latest sensor data
         data = getattr(self.status_model, "status_data", {})
 

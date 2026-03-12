@@ -106,18 +106,24 @@ class Sidebar(QWidget):
         source_lower = source_name.lower()
 
         if source_lower == "select":
+            self.port_label.setText("COM Port:")
+            self.refresh_button.setText("Refresh Ports")
             self.port_dropdown.hide()
             self.port_label.hide()
             self.refresh_button.hide()
             self.connect_button.hide()
             self.hide_control_buttons()
         elif source_lower == "csv":
-            self.port_dropdown.hide()
-            self.port_label.hide()
-            self.refresh_button.hide()
+            self.port_label.setText("CSV File:")
+            self.refresh_button.setText("Refresh CSVs")
+            self.port_dropdown.show()
+            self.port_label.show()
+            self.refresh_button.show()
             self.connect_button.show()
             self.hide_control_buttons()
         else:
+            self.port_label.setText("COM Port:")
+            self.refresh_button.setText("Refresh Ports")
             self.port_dropdown.show()
             self.port_label.show()
             self.refresh_button.show()
@@ -148,7 +154,7 @@ class Sidebar(QWidget):
     def get_refresh_button(self):
         return self.refresh_button
 
-    def get_connect_button(self):
+    def get_connect_button(self) -> QPushButton:
         return self.connect_button
 
     def get_live_update_button(self):

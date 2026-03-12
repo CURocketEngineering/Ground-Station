@@ -1,6 +1,10 @@
 import pandas as pd
 import numpy as np
 from typing import Tuple
+from cure_ground.data_sources.timestamp_utils import (
+    TIMESTAMP_KEYS,
+    infer_timestamp_multiplier_to_ms,
+)
 
 
 class LaunchDetector:
@@ -30,6 +34,7 @@ class LaunchDetector:
         try:
             # Read CSV file
             df = pd.read_csv(csv_file_path)
+            df = self._normalize_timestamps_to_milliseconds(df)
 
             # Find launch index
             launch_index = self._find_launch_index(df)
@@ -52,6 +57,7 @@ class LaunchDetector:
             traceback.print_exc()
             # Fallback: return original dataframe
             df = pd.read_csv(csv_file_path)
+            df = self._normalize_timestamps_to_milliseconds(df)
             return df, 0, 0
 
     def _find_launch_index(self, df: pd.DataFrame) -> int:
@@ -95,10 +101,9 @@ class LaunchDetector:
 
         # CRITICAL: Handle circular buffer wrap-around
         # Find timestamp discontinuities that indicate buffer wrap
-        timestamp_columns = ["TIMESTAMP", "timestamp", "Timestamp"]
         timestamp_data = None
 
-        for col in timestamp_columns:
+        for col in TIMESTAMP_KEYS:
             if col in df.columns and not df[col].isna().all():
                 timestamp_data = pd.to_numeric(df[col], errors="coerce")
                 if timestamp_data.notna().any():
@@ -138,32 +143,29 @@ class LaunchDetector:
         print("No sustained launch acceleration found")
         return -1
 
-    def _get_launch_timestamp(self, df: pd.DataFrame, launch_index: int) -> float:
+    def _get_launch_timestamp(self, df: pd.DataFrame, launch_index: int) -> int:
         """Get the timestamp of launch"""
-        timestamp_columns = ["TIMESTAMP", "timestamp", "Timestamp"]
-
-        for col in timestamp_columns:
+        for col in TIMESTAMP_KEYS:
             if col in df.columns and not df[col].isna().all():
                 try:
                     timestamp = pd.to_numeric(
                         df[col].iloc[launch_index], errors="coerce"
                     )
                     if not np.isnan(timestamp):
-                        return float(timestamp)
+                        return int(round(float(timestamp)))
                 except (ValueError, IndexError):
                     continue
 
         # If no timestamp found, return the index as fallback
-        return float(launch_index)
+        return int(launch_index)
 
     def _trim_around_launch(self, df: pd.DataFrame, launch_index: int) -> pd.DataFrame:
         """Trim dataframe to show data around launch - includes all post-launch data"""
         # Try to use timestamps for accurate trimming
-        timestamp_columns = ["TIMESTAMP", "timestamp", "Timestamp"]
         timestamp_data = None
         timestamp_col = None
 
-        for col in timestamp_columns:
+        for col in TIMESTAMP_KEYS:
             if col in df.columns and not df[col].isna().all():
                 try:
                     timestamp_data = pd.to_numeric(df[col], errors="coerce")
@@ -218,6 +220,23 @@ class LaunchDetector:
         # Reset index for clean data
         trimmed_df = trimmed_df.reset_index(drop=True)
         return trimmed_df
+
+    def _normalize_timestamps_to_milliseconds(self, df: pd.DataFrame) -> pd.DataFrame:
+        normalized_df = df.copy()
+
+        for col in TIMESTAMP_KEYS:
+            if col not in normalized_df.columns:
+                continue
+
+            timestamp_data = pd.to_numeric(normalized_df[col], errors="coerce")
+            if not timestamp_data.notna().any():
+                continue
+
+            multiplier_to_ms = infer_timestamp_multiplier_to_ms(timestamp_data.tolist())
+            converted_timestamps = (timestamp_data * multiplier_to_ms).round()
+            normalized_df[col] = converted_timestamps.astype("Int64")
+
+        return normalized_df
 
     def create_trimmed_csv(self, original_csv_path: str, output_csv_path: str) -> bool:
         """Create a trimmed CSV file around launch"""

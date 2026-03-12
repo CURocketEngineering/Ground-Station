@@ -1,121 +1,99 @@
 # CURE Ground Station
 
-CU Rocketry Ground Station Software - A command-line interface for communicating with MARTHA-1.3 flight computer.
+CU Rocketry Ground Station software for communicating with MARTHA flight computers.
 
-## Features
+## What You Need
 
-- Ping test for basic connectivity
-- Version information retrieval
-- Flash memory dump with CSV export and data visualization
-- Rich command-line interface with progress tracking
+- A laptop with terminal access
+- Python 3.9+ installed
+- `uv` installed (instructions below)
 
-## Installation
+If you are new to Python tooling: `uv` replaces most day-to-day `pip` and virtual environment setup steps.
 
-1. Clone the repository:
+## Install `uv` (One Time Per Laptop)
+
+Choose your OS:
+
+### macOS and Linux
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+### Windows PowerShell
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+After install, open a new terminal and verify:
+
+```bash
+uv --version
+```
+
+## First-Time Project Setup
+
+From your terminal:
+
 ```bash
 git clone https://github.com/CURocketEngineering/Ground-Station.git
 cd Ground-Station
+uv sync --dev
 ```
 
-2. Install the package:
+What this does:
+
+- Creates a local virtual environment in `.venv`
+- Installs all runtime dependencies
+- Installs developer tools (like `ruff`, `pre-commit`)
+- Uses the lockfile to keep installs consistent across the team
+
+## Run Commands (No Manual Activation Needed)
+
+Use `uv run` so you can run commands directly from the repo root:
+
 ```bash
-pip install -e .
+uv run cure-ground --help
+uv run cure-ground gui
+uv run cure-ground post-flight
 ```
 
-## Usage
+## GUI Setup
 
-The Ground-Station can be run by typing the command `cure-ground` in the
-terminal. Use the `--help` argument to get a list of all the available commands
+Before launching the GUI, download the shared GUI assets and place them in:
+
+- Linux/macOS: `cure_ground/gui/resources`
+- Windows (same path from repo root): `cure_ground\gui\resources`
+
+Assets folder:
+[Ground-Station-Assets (SharePoint)](https://clemson.sharepoint.com/:f:/r/teams/ClemsonUniversityRocketEngineering/Shared%20Documents/CURE/Engineering%20Division/Subteams/Software/Ground-Station-Assets?csf=1&web=1&e=NV0l7o)
+
+Then launch:
+
+```bash
+uv run cure-ground gui
+```
+
+## Optional: Activate The Environment
+
+Most users should keep using `uv run ...`, but if you want direct command access:
+
+- Linux/macOS: `source .venv/bin/activate`
+- Windows PowerShell: `.\.venv\Scripts\Activate.ps1`
+- Windows CMD: `.\.venv\Scripts\activate.bat`
+
+Then you can run:
 
 ```bash
 cure-ground --help
 ```
 
-```txt
-❯ cure-ground --help
-
- Usage: cure-ground [OPTIONS] COMMAND [ARGS]...
-
- Ground Station CLI
-
-╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --install-completion          Install completion for the current shell.                              │
-│ --show-completion             Show completion for the current shell, to copy it or customize the     │
-│                               installation.                                                          │
-│ --help                        Show this message and exit.                                            │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────────╮
-│ ping          Test connection to MARTHA device                                                       │
-│ versions      Get version information from MARTHA device                                             │                                    
-│ post-flight   Run the post-flight data collection & processing flow                                  |
-| gui           Launch the telemetry GUI application                                                   │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
-```
-
-### GUI
-
-To run the telemetry GUI, you'll first need to install some assets.
-
-Download everything in [this assets folder](https://clemson.sharepoint.com/:f:/r/teams/ClemsonUniversityRocketEngineering/Shared%20Documents/CURE/Engineering%20Division/Subteams/Software/Ground-Station-Assets?csf=1&web=1&e=NV0l7o) and place it in `cure_ground/gui/resources`
-
-You can then the run the GUI with:
-
-```bash
-cure-ground gui
-```
-
-
-### Post Flight
-
-Run the post flight CLI flow to get data off of the connect flight computer
-and then plot the data for quick analysis
-
-
-### Ping Test
-
-Test basic connectivity with the MARTHA device:
-```bash
-cure-ground ping /dev/ttyACM0
-```
-
-### Version Information
-
-Get version information from all system components:
-```bash
-cure-ground versions /dev/ttyACM0
-```
-
-### Flash Memory Dump
-
-Download and save flash memory contents with optional graph generation:
-```bash
-cure-ground flash-dump /dev/ttyACM0 --output flight_data.csv
-```
-
-Common options for all commands:
-- `--baudrate`: Set serial communication speed (default: 115200)
-- `--timeout`: Set operation timeout in seconds
-
 ## Development
 
-The project follows a modular architecture with clear separation of concerns:
+Useful commands:
 
-- `core/protocols/`: Communication protocol specifications
-- `core/functions/`: Main functionality implementations
-- `cli/`: Command-line interface
-
-## License
-
-MIT License - See LICENSE file for details.
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
-
-## Authors
-
-Clemson University Rocket Engineering
+```bash
+uv run ruff check .
+uv run pre-commit run --all-files
+```

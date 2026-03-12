@@ -13,8 +13,8 @@ def main():
     # Create view
     view = MainWindow()
 
-    # Create controller and connect it to the view
-    DashboardController(view)
+    # Create controller instance to prevent garbage collection
+    _controller = DashboardController(view) 
 
     # Show the window
     view.show()

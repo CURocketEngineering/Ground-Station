@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cure-ground"
+version = "0.1.0"
+description = "CURE Ground Station Software"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [
+  { name = "Clemson University Rocket Engineering" },
+]
+license = "MIT"
+dependencies = [
+  "numpy>=1.23.0",
+  "psutil>=5.9.0",
+  "PyOpenGL>=3.1.7",
+  "pyqt6",
+  "typer>=0.9.0",
+  "rich>=13.0.0",
+  "pyserial>=3.5",
+  "pandas>=2.0.0",
+  "matplotlib>=3.7.0",
+  "tqdm>=4.65.0",
+  "kaleido>=0.2.1",
+  "questionary",
+  "plotly",
+  "pyyaml",
+  "pyqtgraph",
+]
+
+[project.urls]
+Homepage = "https://github.com/CURocketEngineering/Ground-Station"
+
+[project.scripts]
+cure-ground = "cure_ground.cli.main:main"
+
+[dependency-groups]
+dev = [
+  "pre-commit",
+  "ruff",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["cure_ground*"]

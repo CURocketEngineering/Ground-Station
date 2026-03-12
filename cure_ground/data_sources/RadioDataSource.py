@@ -7,8 +7,9 @@ Location: cure_ground/data_sources/radio_data_source.py
 
 import struct
 import time
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 import serial
+from collections import deque
 
 from cure_ground.core.protocols.data_names.data_name_loader import (
     load_data_name_enum,
@@ -21,8 +22,9 @@ from cure_ground.data_sources import DataSource
 class RadioDataSource(DataSource):
     """Handles radio telemetry data reception and parsing."""
 
-    START_SEQUENCE = [b"\x00", b"\x00", b"\x00", b"\x33"]
-    END_SEQUENCE = [b"\x00", b"\x00", b"\x00", b"\x34"]
+    START_SEQUENCE = b"\x00\x00\x00\x33"
+    END_SEQUENCE = b"\x00\x00\x00\x34"
+    MAX_RX_BUFFER_BYTES = 65536
 
     def __init__(
         self,
@@ -68,6 +70,14 @@ class RadioDataSource(DataSource):
         self.latest_data: Dict[str, str] = {}
         self.last_packet_time = 0
 
+        # --- Rolling 100-packet retention tracking ---
+        self._last_packet_number: Optional[int] = None
+        self._packet_window = deque(maxlen=100)  # last 100 packet results
+        self._packet_retention_ratio = 1.0
+
+        # Rolling serial RX buffer for chunked / delayed packet arrival.
+        self._rx_buffer = bytearray()
+
     def connect(self) -> bool:
         """
         Establish serial connection.
@@ -78,6 +88,8 @@ class RadioDataSource(DataSource):
         try:
             self.ser = serial.Serial(self.port, self.baudrate, timeout=self.timeout)
             self.ser.flush()
+            self.ser.reset_input_buffer()
+            self._rx_buffer.clear()
             self._connected = True
             print(f"RadioDataSource: Connected to {self.port} at {self.baudrate} baud")
             return True
@@ -90,6 +102,7 @@ class RadioDataSource(DataSource):
         """Close serial connection."""
         if self.ser and self.ser.is_open:
             self.ser.close()
+        self._rx_buffer.clear()
         self._connected = False
         print("RadioDataSource: Disconnected from serial port")
 
@@ -97,7 +110,7 @@ class RadioDataSource(DataSource):
         """Check if data source is connected."""
         return self._connected and self.ser is not None and self.ser.is_open
 
-    def get_data(self) -> Optional[Dict[str, str]]:
+    def get_data(self) -> Optional[Dict[str, Any]]:
         """
         Get latest data in StatusModel-compatible format.
 
@@ -107,9 +120,13 @@ class RadioDataSource(DataSource):
         if not self.is_connected():
             return None
 
-        # Try to read a new packet
-        packet = self._read_packet()
-        if packet:
+        self._ingest_available_bytes()
+
+        # Process all complete packets currently in the buffer.
+        while True:
+            packet = self._read_packet()
+            if not packet:
+                break
             self._update_latest_data(packet)
 
         # Return the latest data we have (even if packet read failed)
@@ -123,10 +140,10 @@ class RadioDataSource(DataSource):
         Args:
             packet: Raw packet from _read_packet()
         """
-        # Update timestamp (convert from ms to seconds)
-        timestamp_sec = packet["timestamp"] / 1000.0
-        self.latest_data["TIMESTAMP"] = f"{timestamp_sec:.3f}"
-        self.last_packet_time = time.time()
+        timestamp_ms = packet["timestamp"]
+        self.latest_data["TIMESTAMP"] = f"{timestamp_ms}"
+        self.latest_data["NUM_PACKETS_SENT"] = str(int(packet["packet_number"]))
+        self.last_packet_time = int(time.time() * 1000)
 
         # Process each data entry in the packet
         for entry in packet["data"]:
@@ -145,43 +162,60 @@ class RadioDataSource(DataSource):
                         try:
                             comp_info = self.data_names.get_info_by_id(comp_id)
                             comp_name = comp_info["name"]
-                            self.latest_data[comp_name] = f"{value:.4f}"
+                            self.latest_data[comp_name] = value
                         except (KeyError, IndexError):
                             pass
                 else:
-                    self.latest_data[name] = f"{entry['float_value']:.4f}"
+                    self.latest_data[name] = entry["float_value"]
 
             except KeyError:
                 # Unknown ID - skip it
                 pass
 
-    def _read_until_start_sequence(self) -> bool:
+    def _ingest_available_bytes(self):
         """
-        Read bytes until start sequence is found.
+        Pull all currently available serial bytes into the RX buffer.
+        """
+        assert self.ser is not None, "Serial connection not established"
+
+        available = self.ser.in_waiting
+        if available <= 0:
+            return
+
+        new_bytes = self.ser.read(available)
+        if not new_bytes:
+            return
+
+        self._rx_buffer.extend(new_bytes)
+
+        # Guard against unbounded growth while preserving best-effort sync data.
+        if len(self._rx_buffer) > self.MAX_RX_BUFFER_BYTES:
+            start_idx = self._rx_buffer.rfind(self.START_SEQUENCE)
+            if start_idx > 0:
+                del self._rx_buffer[:start_idx]
+
+            if len(self._rx_buffer) > self.MAX_RX_BUFFER_BYTES:
+                del self._rx_buffer[: -self.MAX_RX_BUFFER_BYTES]
+
+    def _align_buffer_to_start_sequence(self) -> bool:
+        """
+        Align buffer start to the start sequence.
 
         Returns:
-            True if start sequence found, False on timeout
+            True if start sequence is present at buffer index 0.
         """
-        buffer = []
-        while True:
-            byte = self.ser.read(1)
-            if not byte:  # Timeout
-                return False
-            buffer.append(byte)
-            if len(buffer) >= 4 and buffer[-4:] == self.START_SEQUENCE:
-                return True
+        start_idx = self._rx_buffer.find(self.START_SEQUENCE)
+        if start_idx == -1:
+            # Keep only a short suffix so split start markers can still match later.
+            keep_tail = len(self.START_SEQUENCE) - 1
+            if len(self._rx_buffer) > keep_tail:
+                del self._rx_buffer[:-keep_tail]
+            return False
 
-    def _read_timestamp(self) -> int:
-        """
-        Read and parse 4-byte timestamp.
+        if start_idx > 0:
+            del self._rx_buffer[:start_idx]
 
-        Returns:
-            Timestamp value in milliseconds
-        """
-        timestamp_bytes = self.ser.read(4)
-        if len(timestamp_bytes) != 4:
-            raise IOError("Failed to read timestamp")
-        return struct.unpack(">I", timestamp_bytes)[0]
+        return True
 
     def _parse_data_entry(self, data_id: int, data_bytes: bytes) -> Dict:
         """
@@ -218,57 +252,68 @@ class RadioDataSource(DataSource):
 
         return result
 
-    def _read_packet_data(self) -> List[Dict]:
+    def _extract_next_packet_from_buffer(self) -> Optional[Dict]:
         """
-        Read all data entries in a packet until end sequence.
+        Parse one complete packet from RX buffer if available.
 
         Returns:
-            List of parsed data dictionaries
+            Parsed packet dict when complete packet is present, else None.
         """
-        packet_data = []
+        if not self._align_buffer_to_start_sequence():
+            return None
+
+        # start(4) + timestamp(4) + packet_number(4)
+        if len(self._rx_buffer) < 12:
+            return None
+
+        try:
+            timestamp = struct.unpack(">I", bytes(self._rx_buffer[4:8]))[0]
+            packet_number = struct.unpack(">I", bytes(self._rx_buffer[8:12]))[0]
+        except struct.error as e:
+            print(f"RadioDataSource: Error parsing packet header: {e}")
+            del self._rx_buffer[:1]
+            return None
+
+        cursor = 12
+        packet_data: List[Dict] = []
 
         while True:
-            # Read ID byte
-            buffer = []
-            id_byte = self.ser.read(1)
-            if not id_byte:
-                break
+            remaining = len(self._rx_buffer) - cursor
+            if remaining < 4:
+                return None
 
-            buffer.append(id_byte)
-            data_id = struct.unpack("B", id_byte)[0]
+            if bytes(self._rx_buffer[cursor : cursor + 4]) == self.END_SEQUENCE:
+                packet_end = cursor + 4
+                del self._rx_buffer[:packet_end]
+                self._update_packet_retention(packet_number)
+                return {
+                    "timestamp": timestamp,
+                    "packet_number": packet_number,
+                    "data": packet_data,
+                    "receive_time": int(time.time() * 1000),
+                }
 
-            # Read first 3 bytes of data
-            data_bytes = bytes()
-            for _ in range(3):
-                next_byte = self.ser.read(1)
-                if not next_byte:
-                    return packet_data
-                data_bytes += next_byte
-                buffer.append(next_byte)
-
-            # Check if we hit end sequence
-            if buffer == self.END_SEQUENCE:
-                break
-
-            # Determine expected data length based on whether ID is a group
+            data_id = self._rx_buffer[cursor]
             expected_length = 12 if data_id in self.group_ids else 4
+            entry_total = 1 + expected_length
 
-            # Read remaining data bytes
-            while len(data_bytes) < expected_length:
-                data_byte = self.ser.read(1)
-                if not data_byte:
-                    return packet_data
-                data_bytes += data_byte
+            if remaining < entry_total:
+                return None
 
-            # Parse and store the data
+            data_bytes = bytes(
+                self._rx_buffer[cursor + 1 : cursor + 1 + expected_length]
+            )
+
             try:
                 parsed_data = self._parse_data_entry(data_id, data_bytes)
                 packet_data.append(parsed_data)
             except Exception as e:
                 print(f"RadioDataSource: Error parsing data ID {data_id}: {e}")
-                continue
+                # Drop one byte and resync on next iteration.
+                del self._rx_buffer[:1]
+                return None
 
-        return packet_data
+            cursor += entry_total
 
     def _read_packet(self) -> Optional[Dict]:
         """
@@ -281,25 +326,49 @@ class RadioDataSource(DataSource):
             return None
 
         try:
-            # Find start sequence
-            if not self._read_until_start_sequence():
-                return None
-
-            # Read timestamp
-            timestamp = self._read_timestamp()
-
-            # Read all data in packet
-            packet_data = self._read_packet_data()
-
-            return {
-                "timestamp": timestamp,
-                "data": packet_data,
-                "receive_time": time.time(),
-            }
-
+            return self._extract_next_packet_from_buffer()
         except Exception as e:
             print(f"RadioDataSource: Error reading packet: {e}")
             return None
+
+    def _update_packet_retention(self, packet_number: int):
+        """
+        Rolling 100-packet retention window.
+        1 = packet received
+        0 = packet lost
+        Updates for every packet recevied, and then looks
+        at the past 100 packets read in
+        The percentage of received packets is calculated
+        """
+
+        if self._last_packet_number is None:
+            self._last_packet_number = packet_number
+            self._packet_window.append(1)
+            return
+
+        diff = packet_number - self._last_packet_number
+
+        if diff > 1:
+            # Missed packets → add zeros
+            for _ in range(diff - 1):
+                self._packet_window.append(0)
+
+        # Current packet received
+        self._packet_window.append(1)
+
+        self._last_packet_number = packet_number
+
+        # Only calculate once window fills
+        if len(self._packet_window) == self._packet_window.maxlen:
+            self._packet_retention_ratio = (
+                sum(self._packet_window) / self._packet_window.maxlen
+            )
+        else:
+            # Until full, show 100%
+            self._packet_retention_ratio = 1.0
+
+    def get_packet_retention_ratio(self) -> float:
+        return self._packet_retention_ratio
 
     def get_available_ports(self) -> List[str]:
         """
