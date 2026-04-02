@@ -57,6 +57,7 @@ Use `uv run` so you can run commands directly from the repo root:
 uv run cure-ground --help
 uv run cure-ground gui
 uv run cure-ground post-flight
+uv run cure-ground regenerate-graphs /path/to/data.csv
 ```
 
 ## GUI Setup

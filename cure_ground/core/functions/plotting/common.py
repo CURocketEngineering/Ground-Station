@@ -5,6 +5,61 @@ import plotly.graph_objects as go
 
 from cure_ground.core.protocols.data_names.data_name_loader import DataNames
 
+PLOT_WIDTH_PX = 2000
+PLOT_HEIGHT_PX = 1000
+PLOT_SCALE = 2
+
+
+def _format_launch_window_label(time_index: pd.Index) -> str:
+    """
+    Returns a compact launch-window label derived from the plotted time index.
+    Example: "Launch Window: -2 to +200 s"
+    """
+    if len(time_index) == 0:
+        return "Launch Window"
+
+    start_s = float(time_index.min())
+    end_s = float(time_index.max())
+    return f"Launch Window: {start_s:+g} to {end_s:+g} s"
+
+
+def _compute_time_tick_step(time_index: pd.Index, target_ticks: int) -> float:
+    """
+    Returns a readable, "nice" x-axis tick spacing in seconds for dense timing analysis.
+    """
+    if len(time_index) < 2:
+        return 1.0
+
+    time_span = float(time_index.max() - time_index.min())
+    if time_span <= 0:
+        return 1.0
+
+    raw_step = time_span / max(target_ticks, 1)
+    nice_steps = [
+        0.01,
+        0.02,
+        0.05,
+        0.1,
+        0.2,
+        0.25,
+        0.5,
+        1,
+        2,
+        5,
+        10,
+        15,
+        20,
+        30,
+        60,
+        120,
+        300,
+    ]
+
+    for step in nice_steps:
+        if step >= raw_step:
+            return step
+    return nice_steps[-1]
+
 
 def load_csv(csv_path: str) -> pd.DataFrame:
     """
@@ -91,6 +146,10 @@ def plot_column_full_and_launch_window(
         units: A dict mapping column names to their respective units (e.g. {"altitude": "m"}).
         save_path: The directory path to save the PNG files.
     """
+    full_tick_step = _compute_time_tick_step(df.index, target_ticks=36)
+    launch_tick_step = _compute_time_tick_step(launch_df.index, target_ticks=48)
+    launch_window_label = _format_launch_window_label(launch_df.index)
+
     # -- Full Data Plot --
     fig_full = go.Figure()
     fig_full.add_trace(
@@ -99,6 +158,7 @@ def plot_column_full_and_launch_window(
             y=df[column].interpolate(),  # helps fill small NaNs
             mode="lines",
             name=column,
+            line=dict(width=2),
         )
     )
     fig_full.update_layout(
@@ -106,8 +166,20 @@ def plot_column_full_and_launch_window(
         xaxis_title="Time from Launch (s)",
         yaxis_title=f"{column} ({units.get(column, '')})",
         template="plotly_dark",
+        width=PLOT_WIDTH_PX,
+        height=PLOT_HEIGHT_PX,
     )
-    fig_full.write_image(os.path.join(save_path, f"{column}_full.png"))
+    fig_full.update_xaxes(
+        showgrid=True,
+        tickmode="linear",
+        dtick=full_tick_step,
+        tickformat="~g",
+        ticks="outside",
+    )
+    fig_full.update_yaxes(showgrid=True, ticks="outside", nticks=16)
+    fig_full.write_image(
+        os.path.join(save_path, f"{column}_full.png"), scale=PLOT_SCALE
+    )
 
     # -- Launch-Window Plot --
     fig_launch = go.Figure()
@@ -117,16 +189,29 @@ def plot_column_full_and_launch_window(
             y=launch_df[column].interpolate(),
             mode="lines",
             name=column,
+            line=dict(width=2),
         )
     )
     fig_launch.update_layout(
-        title=f"{column} (Launch Window: -2 to +40 s)",
+        title=f"{column} ({launch_window_label})",
         xaxis_title="Time from Launch (s)",
         yaxis_title=f"{column} ({units.get(column, '')})",
         template="plotly_dark",
+        width=PLOT_WIDTH_PX,
+        height=PLOT_HEIGHT_PX,
     )
+    fig_launch.update_xaxes(
+        showgrid=True,
+        tickmode="linear",
+        dtick=launch_tick_step,
+        tickformat="~g",
+        ticks="outside",
+    )
+    fig_launch.update_yaxes(showgrid=True, ticks="outside", nticks=18)
     print("Saved a graph to ", os.path.join(save_path, f"{column}_launch.png"))
-    fig_launch.write_image(os.path.join(save_path, f"{column}_launch.png"))
+    fig_launch.write_image(
+        os.path.join(save_path, f"{column}_launch.png"), scale=PLOT_SCALE
+    )
 
 
 def plot_summary_figure(
@@ -152,6 +237,8 @@ def plot_summary_figure(
         save_path: The directory path for saving the summary plot.
         key_state_event_labels: A dictionary mapping state values to their labels.
     """
+    launch_window_label = _format_launch_window_label(launch_df.index)
+
     # Compute total acceleration if accelerometer columns exist
     if {
         data_names["ACCELEROMETER_X"].name,
@@ -243,7 +330,7 @@ def plot_summary_figure(
         )
 
     fig.update_layout(
-        title="Altitude and Total Acceleration (Launch Window: -2 to +40 s)",
+        title=f"Altitude and Total Acceleration ({launch_window_label})",
         xaxis_title="Time from Launch (s)",
         yaxis_title=(
             f"Altitude ({units.get(data_names['ALTITUDE'].name, '')}) / "

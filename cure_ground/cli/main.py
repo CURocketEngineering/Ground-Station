@@ -3,12 +3,13 @@ CLI interface for MARTHA ground station
 """
 
 import sys
+from pathlib import Path
 
 import typer
 from rich.console import Console
 from rich.table import Table
 
-from cure_ground.cli.post_flight import post_flight_flow
+from cure_ground.cli.post_flight import post_flight_flow, regenerate_graphs_flow
 from cure_ground.core.functions.ping import ping_device
 from cure_ground.core.functions.versions import get_versions
 from cure_ground.gui.main import main as launch_gui
@@ -87,6 +88,22 @@ def versions(
 def post_flight():
     """Run the post-flight data collection & processing flow"""
     post_flight_flow()
+
+
+@app.command("regenerate-graphs")
+def regenerate_graphs(
+    csv_path: Path = typer.Argument(
+        ...,
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+        resolve_path=True,
+        help="Path to an existing flight CSV",
+    ),
+):
+    """Regenerate graphs from an existing CSV without running a dump."""
+    regenerate_graphs_flow(str(csv_path))
 
 
 def main():
