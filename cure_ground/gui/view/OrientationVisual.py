@@ -48,7 +48,7 @@ class OrientationView(QWidget):
         self.target_pitch = 0.0
         self.target_yaw = 0.0
         self.target_roll = 0.0
-        self.smooth_factor = 0.1
+        self.smooth_factor = 1
 
         # Initialize filter before starting the update timer.
         self.kf = KalmanFilter()
@@ -108,7 +108,7 @@ class OrientationView(QWidget):
         self.current_roll += (self.target_roll - self.current_roll) * self.smooth_factor
 
         # Apply body-fixed rotation
-        # the rotation order roll → pitch → yaw
+        # the rotation order yaw → pitch → roll
         self._apply_rotation_matrix(
             self.current_roll, self.current_pitch, self.current_yaw
         )
@@ -135,6 +135,7 @@ class OrientationView(QWidget):
             [[np.cos(y), -np.sin(y), 0], [np.sin(y), np.cos(y), 0], [0, 0, 1]]
         )
 
+        # compose in roll→pitch→yaw order: X, then Y, then Z
         R = R_z @ R_y @ R_x
 
         # Convert to 4x4 matrix for GLMeshItem
