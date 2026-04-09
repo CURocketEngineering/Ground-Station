@@ -11,6 +11,19 @@ from cure_ground.core.protocols.states.states_loader import States
 FT_PER_M = 3.28084  # handy constant
 
 
+def _get_time_tick_step(time_span: float) -> float:
+    """Pick a readable major tick step with more density than Plotly defaults."""
+    if time_span <= 20:
+        return 1.0
+    if time_span <= 60:
+        return 2.0
+    if time_span <= 120:
+        return 5.0
+    if time_span <= 300:
+        return 10.0
+    return 20.0
+
+
 def plot_stacked_summary_figure(
     launch_df: pd.DataFrame,
     states: States,
@@ -197,6 +210,29 @@ def plot_stacked_summary_figure(
         row=2,
         col=1,
     )
+
+    x_numeric = pd.to_numeric(pd.Index(launch_df.index), errors="coerce")
+    valid_x = x_numeric[~pd.isna(x_numeric)]
+    if len(valid_x) > 0:
+        x_min = float(valid_x.min())
+        x_max = float(valid_x.max())
+        time_span = max(x_max - x_min, 0.0)
+        tick_step = _get_time_tick_step(time_span)
+        tick_start = float(int(x_min // tick_step) * tick_step)
+        fig.update_xaxes(
+            tickmode="linear",
+            tick0=tick_start,
+            dtick=tick_step,
+            row=1,
+            col=1,
+        )
+        fig.update_xaxes(
+            tickmode="linear",
+            tick0=tick_start,
+            dtick=tick_step,
+            row=2,
+            col=1,
+        )
 
     fig.update_xaxes(title_text="Time from Detected Launch (s)", row=2, col=1)
 

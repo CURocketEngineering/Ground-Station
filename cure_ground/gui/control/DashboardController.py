@@ -3,7 +3,7 @@ import math
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QMessageBox
 import os
-from typing import Optional
+from typing import Any, Optional
 
 from cure_ground.data_sources.DataSourceFactory import DataSourceFactory
 from cure_ground.gui.model.StatusModel import StatusModel
@@ -11,6 +11,7 @@ from cure_ground.gui.view import MainWindow
 from cure_ground.gui.view.OrientationVisual import OrientationView
 from cure_ground.gui.view.Graphs import MergedGraph
 from cure_ground.gui.view.TextFormatter import TextFormatter
+from cure_ground.gui.view.CommandTerminalDialog import CommandTerminalDialog
 
 
 class DashboardController:
@@ -46,6 +47,7 @@ class DashboardController:
         sidebar.get_live_update_button().clicked.connect(self.toggle_streaming)
         sidebar.get_graph_button().clicked.connect(self.toggle_graph)
         sidebar.get_clear_plm_button().clicked.connect(self.clear_plm)
+        sidebar.get_command_mode_button().clicked.connect(self.open_command_mode)
         sidebar.get_port_dropdown().currentIndexChanged.connect(
             self.on_csv_file_selected
         )
@@ -65,6 +67,10 @@ class DashboardController:
             self.update_status()
             sidebar = self.view.get_sidebar()
             sidebar.show_control_buttons()
+            if self.get_current_data_source_type() == "radio":
+                sidebar.get_command_mode_button().show()
+            else:
+                sidebar.get_command_mode_button().hide()
             sidebar.update_connect_button_text("Disconnect")
 
     def disconnect_and_hide(self):
@@ -271,8 +277,15 @@ class DashboardController:
                 self._last_text_update = now
 
         # === Update packet retention bar ===
-        if hasattr(self.current_data_source, "get_packet_retention_ratio"):
-            retention_ratio = self.current_data_source.get_packet_retention_ratio()
+        retention_getter = getattr(
+            self.current_data_source, "get_packet_retention_ratio", None
+        )
+        if callable(retention_getter):
+            try:
+                raw_retention: Any = retention_getter()
+                retention_ratio = float(raw_retention)
+            except (TypeError, ValueError):
+                retention_ratio = 1.0
         else:
             retention_ratio = 1.0  # Default to 100% if not supported
 
@@ -416,3 +429,82 @@ class DashboardController:
 
         # Also clear the model's stored data
         self.model.clear_graph_data()
+
+    def _send_raw_command(self, command: str) -> bool:
+        if self.current_data_source is None:
+            return False
+
+        send_command = getattr(self.current_data_source, "send_command", None)
+        if callable(send_command):
+            try:
+                return bool(send_command(command, add_newline=True))
+            except TypeError:
+                try:
+                    return bool(send_command(command))
+                except Exception:
+                    pass
+            except Exception:
+                pass
+
+        serial_obj = getattr(self.current_data_source, "ser", None)
+        if serial_obj is None or not getattr(serial_obj, "is_open", False):
+            return False
+
+        try:
+            serial_obj.write((command + "\n").encode("utf-8"))
+            serial_obj.flush()
+            return True
+        except Exception:
+            return False
+
+    def open_command_mode(self):
+        if not self.connected or self.current_data_source is None:
+            QMessageBox.information(
+                self.view, "Not Connected", "Please connect to a data source first."
+            )
+            return
+
+        serial_obj = getattr(self.current_data_source, "ser", None)
+        if serial_obj is None or not getattr(serial_obj, "is_open", False):
+            QMessageBox.information(
+                self.view,
+                "Unsupported Source",
+                "Command mode requires an active serial/radio connection.",
+            )
+            return
+
+        was_streaming = self.streaming
+        if was_streaming:
+            self.toggle_streaming()
+
+        if not self._send_raw_command("ccc"):
+            QMessageBox.warning(
+                self.view,
+                "Command Mode Error",
+                "Failed to send 'ccc' to enter command mode.",
+            )
+            if was_streaming and not self.streaming:
+                self.toggle_streaming()
+            return
+
+        terminal_dialog = CommandTerminalDialog(self.current_data_source, self.view)
+        terminal_dialog.append_output("> ccc")
+
+        help_timer = QTimer(terminal_dialog)
+        help_timer.setSingleShot(True)
+
+        def send_initial_help():
+            if not terminal_dialog.isVisible():
+                return
+            if not self._send_raw_command("help"):
+                terminal_dialog.append_output("[Warn] Failed to send startup 'help'")
+                return
+            terminal_dialog.append_output("> help")
+
+        help_timer.timeout.connect(send_initial_help)
+        help_timer.start(300)
+
+        terminal_dialog.exec()
+
+        if was_streaming and not self.streaming and self.connected:
+            self.toggle_streaming()
