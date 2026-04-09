@@ -39,7 +39,7 @@ class Sidebar(QWidget):
         layout.addWidget(source_label)
 
         self.data_source_combo = QComboBox()
-        self.data_source_combo.addItems(["Select", "Radio", "Serial", "CSV"])
+        self.data_source_combo.addItems(["Select", "Radio", "CSV"])
         self.data_source_combo.setStyleSheet(COMBO_BOX_STYLE)
         self.data_source_combo.setFont(QFont(self.font_family, 12))
         layout.addWidget(self.data_source_combo)
