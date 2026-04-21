@@ -25,6 +25,8 @@ class RadioDataSource(DataSource):
     START_SEQUENCE = b"\x00\x00\x00\x33"
     END_SEQUENCE = b"\x00\x00\x00\x34"
     MAX_RX_BUFFER_BYTES = 65536
+    RECONNECT_INTERVAL_SECONDS = 1.0
+    STALE_LINK_TIMEOUT_SECONDS = 5.0
 
     def __init__(
         self,
@@ -49,6 +51,10 @@ class RadioDataSource(DataSource):
         self.timeout = timeout
         self.ser: Optional[serial.Serial] = None
         self._connected = False
+        self._desired_connection = False
+        self._last_connect_attempt_monotonic = 0.0
+        self._last_radio_activity_monotonic = 0.0
+        self._received_data_since_connect = False
 
         # Load protocol definitions
         self.data_names: DataNames = load_data_name_enum(protocol_version)
@@ -78,37 +84,102 @@ class RadioDataSource(DataSource):
         # Rolling serial RX buffer for chunked / delayed packet arrival.
         self._rx_buffer = bytearray()
 
-    def connect(self) -> bool:
+    def connect(self, port: Optional[str] = None) -> bool:
         """
         Establish serial connection.
 
         Returns:
             True if connection successful, False otherwise
         """
+        if port is not None:
+            self.port = port
+
+        self._desired_connection = True
+        self._last_connect_attempt_monotonic = time.monotonic()
+        return self._open_serial_port()
+
+    def _open_serial_port(self) -> bool:
+        self._close_serial_port()
+
         try:
             self.ser = serial.Serial(self.port, self.baudrate, timeout=self.timeout)
             self.ser.flush()
             self.ser.reset_input_buffer()
+            self._reset_runtime_state()
             self._rx_buffer.clear()
             self._connected = True
             print(f"RadioDataSource: Connected to {self.port} at {self.baudrate} baud")
             return True
-        except serial.SerialException:
-            # print(f"RadioDataSource: Failed to connect to {self.port}: {e}")
+        except (serial.SerialException, OSError) as exc:
             self._connected = False
+            self.ser = None
+            print(f"RadioDataSource: Failed to connect to {self.port}: {exc}")
             return False
 
     def disconnect(self):
         """Close serial connection."""
+        self._desired_connection = False
+        self._close_serial_port()
+        self._reset_runtime_state()
+        self.latest_data = {}
+        self.last_packet_time = 0
+        print("RadioDataSource: Disconnected from serial port")
+
+    def _close_serial_port(self):
         if self.ser and self.ser.is_open:
-            self.ser.close()
+            try:
+                self.ser.close()
+            except (serial.SerialException, OSError):
+                pass
+        self.ser = None
         self._rx_buffer.clear()
         self._connected = False
-        print("RadioDataSource: Disconnected from serial port")
+
+    def _reset_runtime_state(self):
+        self._last_packet_number = None
+        self._packet_window.clear()
+        self._packet_retention_ratio = 1.0
+        self._last_radio_activity_monotonic = time.monotonic()
+        self._received_data_since_connect = False
+
+    def _mark_connection_lost(self, reason: str):
+        if self._connected:
+            print(f"RadioDataSource: Connection lost ({reason}); will retry")
+        self._close_serial_port()
+
+    def _maybe_reconnect(self) -> bool:
+        if not self._desired_connection:
+            return False
+
+        if self.ser is not None and self.ser.is_open:
+            return True
+
+        now = time.monotonic()
+        if now - self._last_connect_attempt_monotonic < self.RECONNECT_INTERVAL_SECONDS:
+            return False
+
+        self._last_connect_attempt_monotonic = now
+        return self._open_serial_port()
+
+    def _connection_is_stale(self) -> bool:
+        if not self._connected or not self._received_data_since_connect:
+            return False
+
+        return (
+            time.monotonic() - self._last_radio_activity_monotonic
+            >= self.STALE_LINK_TIMEOUT_SECONDS
+        )
 
     def is_connected(self) -> bool:
         """Check if data source is connected."""
-        return self._connected and self.ser is not None and self.ser.is_open
+        if self._connection_is_stale():
+            self._mark_connection_lost("no radio data received")
+            return self._maybe_reconnect()
+
+        if self._connected and self.ser is not None and self.ser.is_open:
+            return True
+
+        return self._maybe_reconnect()
 
     def get_data(self) -> Optional[Dict[str, Any]]:
         """
@@ -178,15 +249,27 @@ class RadioDataSource(DataSource):
         """
         assert self.ser is not None, "Serial connection not established"
 
-        available = self.ser.in_waiting
+        try:
+            available = self.ser.in_waiting
+        except (serial.SerialException, OSError) as exc:
+            self._mark_connection_lost(f"failed to check bytes waiting: {exc}")
+            return
+
         if available <= 0:
             return
 
-        new_bytes = self.ser.read(available)
+        try:
+            new_bytes = self.ser.read(available)
+        except (serial.SerialException, OSError) as exc:
+            self._mark_connection_lost(f"failed while reading serial bytes: {exc}")
+            return
+
         if not new_bytes:
             return
 
         self._rx_buffer.extend(new_bytes)
+        self._last_radio_activity_monotonic = time.monotonic()
+        self._received_data_since_connect = True
 
         # Guard against unbounded growth while preserving best-effort sync data.
         if len(self._rx_buffer) > self.MAX_RX_BUFFER_BYTES:
@@ -286,6 +369,8 @@ class RadioDataSource(DataSource):
                 packet_end = cursor + 4
                 del self._rx_buffer[:packet_end]
                 self._update_packet_retention(packet_number)
+                self._last_radio_activity_monotonic = time.monotonic()
+                self._received_data_since_connect = True
                 return {
                     "timestamp": timestamp,
                     "packet_number": packet_number,
@@ -330,6 +415,19 @@ class RadioDataSource(DataSource):
         except Exception as e:
             print(f"RadioDataSource: Error reading packet: {e}")
             return None
+
+    def send_command(self, command: str, add_newline: bool = True) -> bool:
+        if not self.is_connected() or self.ser is None:
+            return False
+
+        try:
+            payload = command + ("\n" if add_newline else "")
+            self.ser.write(payload.encode("utf-8"))
+            self.ser.flush()
+            return True
+        except (serial.SerialException, OSError) as exc:
+            self._mark_connection_lost(f"failed to send command '{command}': {exc}")
+            return False
 
     def _update_packet_retention(self, packet_number: int):
         """
