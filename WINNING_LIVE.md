@@ -49,18 +49,10 @@ uv sync --dev
 ```bash 
 uv run cure-ground --help
 uv run cure-ground gui
-uv run cure-ground post-flight
-uv run cure-ground regenerate-graphs /path/to/data.csv`
 ```
-### Getting Assets for GUI:
-- Go to [Sharepoint Assets](https://clemson.sharepoint.com/teams/ClemsonUniversityRocketEngineering/Shared%20Documents/Forms/AllItems.aspx?csf=1&web=1&e=NV0l7o&CID=ea63eeb2-08c9-4146-9655-d857f11100bf&startedResponseCatch=true&FolderCTID=0x012000D430C3F7ECE58F44B44BF9B1D24BE233&id=%2Fteams%2FClemsonUniversityRocketEngineering%2FShared+Documents%2FCURE%2FEngineering+Division%2FSubteams%2FSoftware%2FGround-Station-Assets)
-- Download everything in the folder
-- Put everything from that folder into `cure_ground\gui\resources`
-   - This is in reference to where you installed the cure-ground folder on your device
 
 #### Lastly, run:
 ```bash
 uv run cure-ground gui
 ```
-
 This should start the ground station
