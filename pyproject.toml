@@ -2,12 +2,15 @@
 requires = ["setuptools>=69", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[tool.uv]
+python-preference = "only-managed"
+
 [project]
 name = "cure-ground"
 version = "0.1.0"
 description = "CURE Ground Station Software"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [
   { name = "Clemson University Rocket Engineering" },
 ]

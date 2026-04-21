@@ -20,6 +20,31 @@ from cure_ground.core.protocols.states.states_loader import (
 )
 
 
+def _find_csv_paths(search_root: str) -> list[str]:
+    found_csv_paths: list[str] = []
+    for root, _, files in os.walk(search_root):
+        for file in files:
+            if file.endswith(".csv"):
+                found_csv_paths.append(os.path.join(root, file))
+    return sorted(found_csv_paths)
+
+
+def _select_csv_path_from_cwd() -> str:
+    found_csv_paths = _find_csv_paths(os.getcwd())
+    if not found_csv_paths:
+        raise FileNotFoundError(f"No CSV files found under {os.getcwd()}")
+
+    selected_csv_path = questionary.select(
+        "Select a CSV file:",
+        choices=found_csv_paths,
+    ).ask()
+
+    if selected_csv_path is None:
+        raise KeyboardInterrupt("CSV selection cancelled")
+
+    return selected_csv_path
+
+
 def post_flight_flow():
     data_name_options = get_list_of_available_data_name_configs()
 
@@ -39,16 +64,7 @@ def post_flight_flow():
         default=False,
     ).ask()
     if skip_dump:
-        # Ask for a path a csv file
-        found_csv_paths = []
-        for root, dirs, files in os.walk(os.getcwd()):
-            for file in files:
-                if file.endswith(".csv"):
-                    found_csv_paths.append(os.path.join(root, file))
-        selected_csv_path = questionary.select(
-            "Select a CSV file:",
-            choices=found_csv_paths,
-        ).ask()
+        selected_csv_path = _select_csv_path_from_cwd()
         print(f"Loaded data from {selected_csv_path}")
         df = pd.read_csv(selected_csv_path)
         print(df.head())
@@ -126,6 +142,54 @@ def post_flight_flow():
             just_summary=just_summary,
         )
 
+    print("Done!")
+
+
+def regenerate_graphs_flow(csv_path: str):
+    if not os.path.isfile(csv_path):
+        raise FileNotFoundError(f"CSV file not found: {csv_path}")
+
+    selected_csv_path = os.path.abspath(csv_path)
+    print(f"Loaded data from {selected_csv_path}")
+
+    # Select protocol versions used by this CSV
+    data_name_options = get_list_of_available_data_name_configs()
+    selected_data_names_version = questionary.select(
+        "Select a data name version:",
+        choices=data_name_options,
+    ).ask()
+
+    states_options = get_list_of_available_states_configs()
+    selected_states_version = questionary.select(
+        "Select a states version:",
+        choices=states_options,
+    ).ask()
+
+    # Just summary?
+    just_summary = questionary.confirm(
+        "Just summary graph?",
+        default=False,
+    ).ask()
+
+    default_graph_save_path = os.path.join(os.path.dirname(selected_csv_path), "graphs")
+    graph_save_path = questionary.text(
+        "Graph output folder:",
+        default=default_graph_save_path,
+    ).ask()
+
+    if graph_save_path is None:
+        raise KeyboardInterrupt("Graph output selection cancelled")
+
+    os.makedirs(graph_save_path, exist_ok=True)
+    print(f"Graphs will be saved to {graph_save_path}")
+    print("Generating graphs...")
+    plot_flight_data(
+        selected_csv_path,
+        graph_save_path,
+        selected_data_names_version,
+        selected_states_version,
+        just_summary=just_summary,
+    )
     print("Done!")
 
 

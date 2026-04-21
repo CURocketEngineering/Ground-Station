@@ -49,6 +49,11 @@ What this does:
 - Installs developer tools (like `ruff`, `pre-commit`)
 - Uses the lockfile to keep installs consistent across the team
 
+## Trouble Shooting:
+
+If you are on a mac (or you are Stephanie), attempt the following command to run the gui
+QT_PLUGIN_PATH=$VIRTUAL_ENV/lib/python3.14/site-packages/PyQt6/Qt6/plugins uv run cure-ground gui
+
 ## Run Commands (No Manual Activation Needed)
 
 Use `uv run` so you can run commands directly from the repo root:
@@ -57,6 +62,7 @@ Use `uv run` so you can run commands directly from the repo root:
 uv run cure-ground --help
 uv run cure-ground gui
 uv run cure-ground post-flight
+uv run cure-ground regenerate-graphs /path/to/data.csv
 ```
 
 ## GUI Setup

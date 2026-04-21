@@ -39,7 +39,7 @@ class Sidebar(QWidget):
         layout.addWidget(source_label)
 
         self.data_source_combo = QComboBox()
-        self.data_source_combo.addItems(["Select", "Radio", "Serial", "CSV"])
+        self.data_source_combo.addItems(["Select", "Radio", "CSV"])
         self.data_source_combo.setStyleSheet(COMBO_BOX_STYLE)
         self.data_source_combo.setFont(QFont(self.font_family, 12))
         layout.addWidget(self.data_source_combo)
@@ -96,6 +96,12 @@ class Sidebar(QWidget):
         layout.addWidget(self.clear_plm_button)
         self.clear_plm_button.hide()
 
+        self.command_mode_button = QPushButton("Open Command Mode")
+        self.command_mode_button.setFont(QFont(self.font_family, 14))
+        self.command_mode_button.setStyleSheet(BUTTON_STYLE)
+        layout.addWidget(self.command_mode_button)
+        self.command_mode_button.hide()
+
         # Connect signal
         self.data_source_combo.currentTextChanged.connect(self.on_data_source_changed)
 
@@ -106,18 +112,24 @@ class Sidebar(QWidget):
         source_lower = source_name.lower()
 
         if source_lower == "select":
+            self.port_label.setText("COM Port:")
+            self.refresh_button.setText("Refresh Ports")
             self.port_dropdown.hide()
             self.port_label.hide()
             self.refresh_button.hide()
             self.connect_button.hide()
             self.hide_control_buttons()
         elif source_lower == "csv":
-            self.port_dropdown.hide()
-            self.port_label.hide()
-            self.refresh_button.hide()
+            self.port_label.setText("CSV File:")
+            self.refresh_button.setText("Refresh CSVs")
+            self.port_dropdown.show()
+            self.port_label.show()
+            self.refresh_button.show()
             self.connect_button.show()
             self.hide_control_buttons()
         else:
+            self.port_label.setText("COM Port:")
+            self.refresh_button.setText("Refresh Ports")
             self.port_dropdown.show()
             self.port_label.show()
             self.refresh_button.show()
@@ -129,12 +141,14 @@ class Sidebar(QWidget):
         self.graph_button.show()
         self.clear_plm_button.show()
         self.clear_graphs_button.show()
+        self.command_mode_button.show()
 
     def hide_control_buttons(self):
         self.live_update_button.hide()
         self.graph_button.hide()
         self.clear_plm_button.hide()
         self.clear_graphs_button.hide()
+        self.command_mode_button.hide()
 
     def update_connect_button_text(self, text):
         self.connect_button.setText(text)
@@ -162,3 +176,6 @@ class Sidebar(QWidget):
 
     def get_clear_graphs_button(self):
         return self.clear_graphs_button
+
+    def get_command_mode_button(self):
+        return self.command_mode_button

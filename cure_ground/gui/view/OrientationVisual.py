@@ -48,65 +48,52 @@ class OrientationView(QWidget):
         self.target_pitch = 0.0
         self.target_yaw = 0.0
         self.target_roll = 0.0
-        self.smooth_factor = 0.1
+        self.smooth_factor = 1
 
-        # Timer for smooth updates (~60 FPS)
-        self.timer = QTimer()
-        self.timer.timeout.connect(self._update_orientation)
-        self.timer.start(100)
+        # Initialize filter before starting the update timer.
+        self.kf = KalmanFilter()
 
         # Initialize sensor data safely
         self._init_sensor_data()
 
-        self.kf = KalmanFilter()
+        # Timer for smooth updates (~60 FPS)
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self._update_orientation)
+        self.timer.start(100)
+
+    @staticmethod
+    def _safe_float(value, default=0.0):
+        if value in (None, "", "N/A"):
+            return default
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return default
 
     def _init_sensor_data(self):
         data = getattr(self.status_model, "status_data", {})
 
-        # Safely convert any strings to floats
-        self.accel = {
-            "x": float(data.get("ACCELEROMETER_X", 0)),
-            "y": float(data.get("ACCELEROMETER_Y", 0)),
-            "z": float(data.get("ACCELEROMETER_Z", 0)),
-        }
-        self.gyro = {
-            "x": float(data.get("GYROSCOPE_X", 0)),
-            "y": float(data.get("GYROSCOPE_Y", 0)),
-            "z": float(data.get("GYROSCOPE_Z", 0)),
-        }
+        # Read attitude directly from radio
+        self.current_pitch = float(data.get("PITCH", 0))
+        self.current_yaw = float(data.get("YAW", 0))
+        self.current_roll = float(data.get("ROLL", 0))
+        self.target_pitch = self.current_pitch
+        self.target_yaw = self.current_yaw
+        self.target_roll = self.current_roll
         self.timestamp = float(data.get("TIMESTAMP", 0))
 
     def _update_orientation(self):
+        # Defensive guard in case an event reaches this callback before full init.
+        if not hasattr(self, "kf"):
+            self.kf = KalmanFilter()
+
         # Get latest sensor data
         data = getattr(self.status_model, "status_data", {})
 
-        # Convert to floats safely
-        accel = np.array(
-            [
-                float(data.get("ACCELEROMETER_X", 0)),
-                float(data.get("ACCELEROMETER_Y", 0)),
-                float(data.get("ACCELEROMETER_Z", 0)),
-            ]
-        )
-        gyro = np.array(
-            [
-                float(data.get("GYROSCOPE_X", 0)),
-                float(data.get("GYROSCOPE_Y", 0)),
-                float(data.get("GYROSCOPE_Z", 0)),
-            ]
-        )
-        timestamp = float(data.get("TIMESTAMP", 0))
-
-        # Run Kalman filter step
-        result = self.kf.step(accel, gyro, timestamp)
-        if result is None:
-            return
-        roll, pitch, yaw = result
-
-        # Update target angles for smooth animation
-        self.target_pitch = pitch
-        self.target_roll = roll
-        self.target_yaw = yaw
+        # Read attitude directly from radio
+        self.target_pitch = float(data.get("PITCH", 0))
+        self.target_roll = float(data.get("ROLL", 0))
+        self.target_yaw = float(data.get("YAW", 0))
 
         # Animate mesh
         self._animate()
@@ -121,28 +108,35 @@ class OrientationView(QWidget):
         self.current_roll += (self.target_roll - self.current_roll) * self.smooth_factor
 
         # Apply body-fixed rotation
+        # the rotation order yaw → pitch → roll
         self._apply_rotation_matrix(
-            self.current_pitch, self.current_yaw, self.current_roll
+            self.current_roll, self.current_pitch, self.current_yaw
         )
 
     # -----------------------------
-    def _apply_rotation_matrix(self, pitch, yaw, roll):
-        # Convert degrees to radians
-        p, y, r = np.radians([pitch, yaw, roll])
+    def _apply_rotation_matrix(self, roll, pitch, yaw):
+        """Apply a body-fixed rotation in roll→pitch→yaw order.
 
-        # Rotation matrices (X=pitch, Y=roll, Z=yaw)
+        Rotate about the X axis first (roll), then Y (pitch), then Z (yaw).
+        """
+        # convert to radians
+        r, p, y = np.radians([roll, pitch, yaw])
+
+        # roll   about X
         R_x = np.array(
-            [[1, 0, 0], [0, np.cos(p), -np.sin(p)], [0, np.sin(p), np.cos(p)]]
+            [[1, 0, 0], [0, np.cos(r), -np.sin(r)], [0, np.sin(r), np.cos(r)]]
         )
+        # pitch  about Y
         R_y = np.array(
-            [[np.cos(r), 0, np.sin(r)], [0, 1, 0], [-np.sin(r), 0, np.cos(r)]]
+            [[np.cos(p), 0, np.sin(p)], [0, 1, 0], [-np.sin(p), 0, np.cos(p)]]
         )
+        # yaw    about Z
         R_z = np.array(
             [[np.cos(y), -np.sin(y), 0], [np.sin(y), np.cos(y), 0], [0, 0, 1]]
         )
 
-        # Body-fixed rotation: R = R_z * R_x * R_y
-        R = R_z @ R_x @ R_y
+        # compose in roll→pitch→yaw order: X, then Y, then Z
+        R = R_z @ R_y @ R_x
 
         # Convert to 4x4 matrix for GLMeshItem
         M = np.eye(4)
