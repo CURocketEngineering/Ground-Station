@@ -15,6 +15,7 @@ class TextFormatter:
             "gyroscope": [],
             "magnetometer": [],
             "altimeter": [],
+            "orientation": [],
             "telemetry": [],
             "microcontroller": [],
             "estimates": [],
@@ -44,12 +45,20 @@ class TextFormatter:
                 self.categories["estimates"].append(name)
             elif lname in ["num_packets_sent"]:
                 self.categories["telemetry"].append(name)
+            elif lname in ["pitch", "roll", "yaw"]:
+                self.categories["orientation"].append(name)
             else:
                 self.categories["misc"].append(name)
 
     def get_left_column_text(self, status_data):
         parts = []
-        for category in ["accelerometer", "gyroscope", "magnetometer", "altimeter"]:
+        for category in [
+            "accelerometer",
+            "gyroscope",
+            "magnetometer",
+            "altimeter",
+            "orientation",
+        ]:
             parts.append(self._format_category(category, status_data))
         return "<br><br>".join(parts)
 
