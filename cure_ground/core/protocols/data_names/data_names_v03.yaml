@@ -131,3 +131,7 @@ data_names:
     id: 120
     unit: "°"
     data: [25, 26, 27]
+  - type: single
+    name: PROBE_TEMPERATURE
+    unit: "°C"
+    id: 28
