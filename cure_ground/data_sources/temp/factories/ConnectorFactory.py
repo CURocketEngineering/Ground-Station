@@ -28,14 +28,6 @@ class DataSourceFactory:
         """
         # Get list of available data source types
         return list(cls._data_sources.keys())
-    
-    @classmethod
-    def register_data_source(cls, name: str, data_source_class: Type[DataSource]):
-        """
-        Register a new data source to the factory
-        """
-        # Register a new data source type
-        cls._data_sources[name.lower()] = data_source_class
 
     @classmethod
     def create_data_source(cls, input_source_type: str, **kwargs) -> Optional[DataSource]:

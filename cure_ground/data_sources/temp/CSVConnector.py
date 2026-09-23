@@ -3,7 +3,7 @@ import time
 import pandas as pd
 import os
 from typing import Dict, Optional, List
-from telemetry_dashboard.connectors.BaseConnector import DataSource
+from .BaseConnector import DataSource
 
 class CSVDataSource(DataSource):
     def __init__(self, csv_file_path: str):
@@ -20,8 +20,11 @@ class CSVDataSource(DataSource):
     def connect(self, port: str = None) -> bool:
         # Connect to CSV data source with launch detection
         try:
+
+            """
             # Detect launch and create trimmed data
             detector = LaunchDetector(pre_launch_seconds=10)  # REMOVED post_launch_seconds parameter
+            """
             
             # Create trimmed CSV in temp directory
             temp_dir = "temp"
@@ -29,8 +32,9 @@ class CSVDataSource(DataSource):
             original_name = os.path.basename(self.csv_file_path)
             name_without_ext = os.path.splitext(original_name)[0]
             self.trimmed_csv_path = os.path.join(temp_dir, f"{name_without_ext}_trimmed.csv")
+
             
-            success = detector.create_trimmed_csv(self.csv_file_path, self.trimmed_csv_path)
+            success = True # detector.create_trimmed_csv(self.csv_file_path, self.trimmed_csv_path)
             
             if success and os.path.exists(self.trimmed_csv_path):
                 print(f"Using trimmed CSV: {self.trimmed_csv_path}")
