@@ -16,7 +16,30 @@ class CSVDataSource(DataSource):
         self.data_start_timestamp = 0
         self.last_valid_values = {}
         self.trimmed_csv_path = None
+
+        self.df = self.read_csv_to_df(self.csv_file_path)
+
+    def read_csv_to_df(self, file_path: str, verbose: bool = False) -> pd.DataFrame:
+        # Read CSV file and return list of rows
+        try:
+
+            df = pd.read_csv(file_path)
         
+        except FileNotFoundError:
+            print(f"CSV file not found: {file_path}")
+
+            return None
+        
+        except Exception as e:
+            print(f"Error reading CSV: {e}")
+
+            return None
+
+        if verbose:
+            print(f"Successfully read CSV file: {file_path}")
+
+        return df
+    
     def connect(self, port: str = None) -> bool:
         # Connect to CSV data source with launch detection
         try:

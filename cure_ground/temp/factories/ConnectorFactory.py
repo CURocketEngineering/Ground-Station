@@ -27,7 +27,7 @@ class DataSourceFactory:
         return list(cls._data_sources.keys())
 
     @classmethod
-    def create_data_source(cls, input_source_type: str, **kwargs) -> Optional[DataSource]:
+    def create_data_source(cls, input_source_type: str, **kwargs) -> DataSource:
         """
         Return the created data source or raise an error if type does not exist
         """
@@ -36,5 +36,7 @@ class DataSourceFactory:
         
         if source_type:
             return source_type(**kwargs)
+
+        print(f"Invalid data source: {input_source_type}")
         
-        raise ValueError(f"Invalid data source: {input_source_type}")
+        return None

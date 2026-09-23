@@ -4,7 +4,8 @@ factory = DataSourceFactory()
 
 print(f"Types: {factory.get_data_source_types()}")
 
-csv = factory.create_data_source("csv", csv_file_path="data/data_trimmed.csv")
+csv = factory.create_data_source("csv", csv_file_path=r"cure_ground/temp/data/data_trimmed.csv")
 
-print(f"CSV Data Source: {csv.get_type()}")
+if csv:
+    print(f"CSV Data Source: {csv.get_type()}")
 
