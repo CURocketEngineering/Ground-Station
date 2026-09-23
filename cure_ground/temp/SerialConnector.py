@@ -5,7 +5,7 @@ from typing import List, Optional, Dict
 from .BaseConnector import DataSource
 
 class SerialDataSource(DataSource):
-    def __init__(self, baudrate: int = 115200, timeout: float = 1.0):
+    def __init__(self, baudrate=115200, timeout=1):
         self.baudrate = baudrate
         self.timeout = timeout
         self.ser = None

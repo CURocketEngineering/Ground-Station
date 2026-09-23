@@ -6,15 +6,12 @@ from ..CSVConnector import CSVDataSource
 from ..SerialConnector import SerialDataSource
 from ..RadioConnector import RadioDataSource
 
-
-
 class DataSourceFactory:
     """
     Class holds the available data sources and allows user to register a new data source.
     The factory is responsible for creating all types of data sources.
     """
     
-    # Available data sources
     _data_sources: Dict[str, Type[DataSource]] = {
         'serial': SerialDataSource,
         'radio': RadioDataSource,
@@ -22,11 +19,11 @@ class DataSourceFactory:
     }
     
     @classmethod
-    def get_available_types(cls) -> list:
+    def get_data_source_types(cls) -> List[str]:
         """
         Returns a list of the available data source types
         """
-        # Get list of available data source types
+
         return list(cls._data_sources.keys())
 
     @classmethod
@@ -35,12 +32,9 @@ class DataSourceFactory:
         Return the created data source or raise an error if type does not exist
         """
 
-        # Retrieve the data source type 
         source_type = cls._data_sources.get(input_source_type.lower())
-
-        # If source does not exist, exit with error
-        if not source_type:
-            raise ValueError(f"Unknown data source type: {input_source_type}")
-
-        # Return created data source
-        return source_type(**kwargs)
+        
+        if source_type:
+            return source_type(**kwargs)
+        
+        raise ValueError(f"Invalid data source: {input_source_type}")
