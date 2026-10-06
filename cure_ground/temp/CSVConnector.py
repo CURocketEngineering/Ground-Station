@@ -6,8 +6,11 @@ from typing import Dict, Optional, List
 from .BaseConnector import DataSource
 
 class CSVDataSource(DataSource):
-    def __init__(self, csv_file_path: str):
-        self.csv_file_path = csv_file_path
+    def __init__(self, file_path: str):
+        self.file_path = file_path
+        self.df = self.read_csv_to_df(self.file_path, verbose=True)
+
+
         self.connected = False
         self.data_rows = []
         self.processed_rows = []
@@ -17,30 +20,28 @@ class CSVDataSource(DataSource):
         self.last_valid_values = {}
         self.trimmed_csv_path = None
 
-        self.df = self.read_csv_to_df(self.csv_file_path)
 
     def read_csv_to_df(self, file_path: str, verbose: bool = False) -> pd.DataFrame:
-        # Read CSV file and return list of rows
         try:
-
             df = pd.read_csv(file_path)
         
-        except FileNotFoundError:
-            print(f"CSV file not found: {file_path}")
-
-            return None
+        except FileNotFoundError as e:
+            raise FileNotFoundError(f"CSV file not found: {file_path}") from e
         
-        except Exception as e:
-            print(f"Error reading CSV: {e}")
+        except pd.errors.EmptyDataError as e:
+            raise pd.errors.EmptyDataError(f"CSV file is empty: {file_path}") from e
 
-            return None
+        except pd.errors.ParserError as e:
+            raise pd.errors.ParserError(f"CSV file could not be parsed: {file_path}") from e
 
         if verbose:
             print(f"Successfully read CSV file: {file_path}")
 
         return df
+
+
     
-    def connect(self, port: str = None) -> bool:
+    def connect(self) -> bool:
         # Connect to CSV data source with launch detection
         try:
 
@@ -52,19 +53,19 @@ class CSVDataSource(DataSource):
             # Create trimmed CSV in temp directory
             temp_dir = "temp"
             os.makedirs(temp_dir, exist_ok=True)
-            original_name = os.path.basename(self.csv_file_path)
+            original_name = os.path.basename(self.file_path)
             name_without_ext = os.path.splitext(original_name)[0]
             self.trimmed_csv_path = os.path.join(temp_dir, f"{name_without_ext}_trimmed.csv")
 
             
-            success = True # detector.create_trimmed_csv(self.csv_file_path, self.trimmed_csv_path)
+            success = True # detector.create_trimmed_csv(self.file_path, self.trimmed_csv_path)
             
             if success and os.path.exists(self.trimmed_csv_path):
                 print(f"Using trimmed CSV: {self.trimmed_csv_path}")
                 used_csv_path = self.trimmed_csv_path
             else:
                 print("Using original CSV (launch detection failed or not needed)")
-                used_csv_path = self.csv_file_path
+                used_csv_path = self.file_path
             
             # Load the CSV data (trimmed or original)
             with open(used_csv_path, 'r', newline='') as csvfile:
@@ -90,7 +91,7 @@ class CSVDataSource(DataSource):
             return True
             
         except FileNotFoundError:
-            print(f"CSV file not found: {self.csv_file_path}")
+            print(f"CSV file not found: {self.file_path}")
             return False
         except Exception as e:
             print(f"Error loading CSV: {e}")

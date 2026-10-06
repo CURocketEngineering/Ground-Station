@@ -12,31 +12,36 @@ class DataSourceFactory:
     The factory is responsible for creating all types of data sources.
     """
     
-    _data_sources: Dict[str, Type[DataSource]] = {
+    _DATA_SOURCES: Dict[str, Type[DataSource]] = {
         'serial': SerialDataSource,
         'radio': RadioDataSource,
         'csv': CSVDataSource
     }
     
     @classmethod
-    def get_data_source_types(cls) -> List[str]:
+    def get_data_source_types(cls, verbose: bool = False) -> List[str]:
         """
         Returns a list of the available data source types
         """
 
-        return list(cls._data_sources.keys())
+        if verbose:
+            print(f"Available data source types: {list(cls._DATA_SOURCES.keys())}")
+        return list(cls._DATA_SOURCES.keys())
 
     @classmethod
-    def create_data_source(cls, input_source_type: str, **kwargs) -> DataSource:
+    def create_data_source(cls, data_source_type: str, verbose: bool = False, **kwargs) -> DataSource:
         """
         Return the created data source or raise an error if type does not exist
         """
 
-        source_type = cls._data_sources.get(input_source_type.lower())
+        data_source = cls._DATA_SOURCES.get(data_source_type.lower())
         
-        if source_type:
-            return source_type(**kwargs)
+        if data_source is not None:
+            if verbose:
+                print(f"Creating {data_source_type} data source")
+            return data_source(**kwargs)
 
-        print(f"Invalid data source: {input_source_type}")
-        
-        return None
+        raise ValueError(
+            f"Invalid data source: {data_source_type}. "
+            f"Available data sources are: {', '.join(cls.get_data_source_types())}"
+        )

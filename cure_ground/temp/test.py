@@ -2,10 +2,15 @@ from cure_ground.temp.factories import DataSourceFactory
 
 factory = DataSourceFactory()
 
-print(f"Types: {factory.get_data_source_types()}")
+factory.get_data_source_types(verbose=True)
 
-csv = factory.create_data_source("csv", csv_file_path=r"cure_ground/temp/data/data_trimmed.csv")
+csv = factory.create_data_source("csv", file_path=r"cure_ground/temp/data/data_trimmed.csv", verbose=True)
 
-if csv:
-    print(f"CSV Data Source: {csv.get_type()}")
+print(csv.df.iloc[0:5])
 
+from serial.tools import list_ports
+
+ports = list_ports.comports()
+
+for port in ports:
+    print(port.device, port.description)
