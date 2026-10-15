@@ -6,7 +6,7 @@ class DataSource(ABC):
     # Abstract base class for all data sources
 
     @abstractmethod
-    def connect(self) -> bool:
+    def connect(self, **kwargs) -> bool:
         # Connect to the data source
         pass
 
@@ -29,6 +29,11 @@ class DataSource(ABC):
         # Send a command to the data source
         raise NotImplementedError("send_command not implemented for this data source")
 
+    """
+    We can most likely remove this, its not needed if we create data source with factory, 
+    then we should already know what type it is
+
     def get_type(self) -> str:
-        # Return the data source type name
-        return self.__class__.__name__.replace("DataSource", "").lower()
+            # Return the data source type name
+            return self.__class__.__name__.replace("DataSource", "").lower()
+    """

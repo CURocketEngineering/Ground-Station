@@ -467,15 +467,3 @@ class RadioDataSource(DataSource):
 
     def get_packet_retention_ratio(self) -> float:
         return self._packet_retention_ratio
-
-    def get_available_ports(self) -> List[str]:
-        """
-        Get list of available serial ports.
-
-        Returns:
-            List of port names
-        """
-        import serial.tools.list_ports
-
-        ports = serial.tools.list_ports.comports()
-        return [port.device for port in ports]

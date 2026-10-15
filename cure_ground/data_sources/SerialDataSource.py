@@ -14,8 +14,7 @@ class SerialDataSource(DataSource):
 
     def get_available_ports(self) -> List[str]:
         # Get list of available serial ports
-        ports = serial.tools.list_ports.comports()
-        return [port.device for port in ports] if ports else ["No Ports Available"]
+        return [port.device for port in serial.tools.list_ports.comports()]
 
     def connect(self, port: str = None) -> bool:
         # Establish serial connection
