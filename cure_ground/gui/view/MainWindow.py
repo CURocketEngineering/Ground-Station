@@ -114,10 +114,6 @@ class MainWindow(QMainWindow):
                 int(self.height() * 0.035), #  height
             )
 
-
-
-
-
     # Sidebar & Status access
     def get_sidebar(self):
         return self.sidebar

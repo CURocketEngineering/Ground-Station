@@ -53,6 +53,9 @@ class DashboardController:
         )
         self.timer.timeout.connect(self.update_status)
         sidebar.get_clear_graphs_button().clicked.connect(self.clear_graphs)
+        sidebar.get_orientation_zero_button().clicked.connect(
+            self.zero_orientation_visual
+        )
 
     # --------------------- CONNECTION HANDLING ---------------------
     def toggle_connection_status(self):
@@ -508,3 +511,7 @@ class DashboardController:
 
         if was_streaming and not self.streaming and self.connected:
             self.toggle_streaming()
+    
+    def zero_orientation_visual(self):
+        if self.orientation_visual:
+            self.orientation_visual.set_zero_orientation()

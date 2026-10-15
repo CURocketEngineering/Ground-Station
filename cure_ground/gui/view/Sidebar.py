@@ -102,6 +102,12 @@ class Sidebar(QWidget):
         layout.addWidget(self.command_mode_button)
         self.command_mode_button.hide()
 
+        self.orientation_zero_button = QPushButton("Zero Orientation")
+        self.orientation_zero_button.setFont(QFont(self.font_family, 14))
+        self.orientation_zero_button.setStyleSheet(BUTTON_STYLE)
+        layout.addWidget(self.orientation_zero_button)
+        self.orientation_zero_button.hide()
+
         # Connect signal
         self.data_source_combo.currentTextChanged.connect(self.on_data_source_changed)
 
@@ -142,6 +148,7 @@ class Sidebar(QWidget):
         self.clear_plm_button.show()
         self.clear_graphs_button.show()
         self.command_mode_button.show()
+        self.orientation_zero_button.show()
 
     def hide_control_buttons(self):
         self.live_update_button.hide()
@@ -149,6 +156,7 @@ class Sidebar(QWidget):
         self.clear_plm_button.hide()
         self.clear_graphs_button.hide()
         self.command_mode_button.hide()
+        self.orientation_zero_button.hide()
 
     def update_connect_button_text(self, text):
         self.connect_button.setText(text)
@@ -179,3 +187,6 @@ class Sidebar(QWidget):
 
     def get_command_mode_button(self):
         return self.command_mode_button
+
+    def get_orientation_zero_button(self):
+        return self.orientation_zero_button

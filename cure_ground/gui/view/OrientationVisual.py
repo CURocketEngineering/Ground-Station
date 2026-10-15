@@ -50,6 +50,11 @@ class OrientationView(QWidget):
         self.target_roll = 0.0
         self.smooth_factor = 1
 
+        # Orientation Zeroing
+        self.zero_pitch = 0.0
+        self.zero_yaw = 0.0
+        self.zero_roll = 0.0
+
         # Initialize filter before starting the update timer.
         self.kf = KalmanFilter()
 
@@ -110,7 +115,7 @@ class OrientationView(QWidget):
         # Apply body-fixed rotation
         # the rotation order yaw → pitch → roll
         self._apply_rotation_matrix(
-            self.current_roll, self.current_pitch, self.current_yaw
+            self.current_roll - self.zero_roll, self.current_pitch - self.zero_pitch, self.current_yaw - self.zero_yaw
         )
 
     # -----------------------------
@@ -143,3 +148,9 @@ class OrientationView(QWidget):
         M[:3, :3] = R
         matrix = QMatrix4x4(*M.T.flatten())
         self.mesh.setTransform(matrix)
+    
+    def set_zero_orientation(self):
+        """Set the current orientation as the zero reference."""
+        self.zero_pitch = self.current_pitch
+        self.zero_yaw = self.current_yaw
+        self.zero_roll = self.current_roll
