@@ -11,6 +11,7 @@ class SerialDataSource(DataSource):
         self.timeout = timeout
         self.ser = None
         self.connected = False
+        
 
     def get_available_ports(self) -> List[str]:
         # Get list of available serial ports
