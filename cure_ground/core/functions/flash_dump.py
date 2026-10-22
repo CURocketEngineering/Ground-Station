@@ -173,17 +173,16 @@ def flash_dump(port: str, stat_only: bool, all_data: bool, date_names: DataNames
     building_row = {}
     for d in tqdm(data_stream):
         if d[0] == date_names["TIMESTAMP"].id:
-            # Time to start a new row.
-            if building_row:  # Only add non-empty rows.
+            if building_row:
                 rows.append(building_row)
             building_row = {}
-        try:
-            # Use the enum's name (or however you want to map it)
-            key = date_names.get_name(d[0])
-            building_row[key] = d[1]
-        except ValueError:
-            print("Invalid name: ", d[0])
-            # Optionally, break or continue
+
+        if d[0] not in date_names._id_to_dict:
+            print(f"Invalid data ID {d[0]}, stopping parse.")
+            break
+
+        key = date_names.get_name(d[0])
+        building_row[key] = d[1]
 
     # Add the final row if it exists.
     if building_row:

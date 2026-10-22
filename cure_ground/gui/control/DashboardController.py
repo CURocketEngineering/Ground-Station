@@ -291,36 +291,77 @@ class DashboardController:
 
         self.view.get_packet_loss_indicator().set_packet_loss(retention_ratio)
 
-    # --------------------- HELPERS ---------------------
+    # --------------------- HELPERS --------------------- 
+    #commands is a list of commands to send
+    #delay_ms is the delay between each command
+    #on_done is a function to call when the command sequence is done
+    def _run_command_sequence(self, commands:list, delay_ms=300, on_done = None):
+        # Pause streaming so update_status doesn't eat the command responses
+        self._plm_was_streaming = self.streaming
+        if self.streaming:
+            self.toggle_streaming()
+        def run_commnds(self, commands:list, delay_ms=300, on_done = None):
+            if not commands:
+                on_done(True, None)
+                return
+            cmd, rest = commands[0], commands[1:]
+            if not self._send_raw_command(cmd):
+                on_done(False, cmd)
+                return
+            print(f"> {cmd}")
+            QTimer.singleShot(
+                delay_ms,
+                lambda: run_commnds(rest, delay_ms, on_done),
+            )
+            
     def clear_plm(self):
-        if not self.connected:
+        if QMessageBox.question(
+            self.view,
+            "Clear PLM",
+            "Are you sure you want to clear the PLM?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        ) == QMessageBox.StandardButton.No:
+            return
+
+        if not self.connected or self.current_data_source is None:
             QMessageBox.information(
                 self.view, "Not Connected", "Please connect to a data source first."
             )
             return
-        if self.current_data_source is None:
+
+        serial_obj = getattr(self.current_data_source, "ser", None)
+        if serial_obj is None or not getattr(serial_obj, "is_open", False):
             QMessageBox.information(
                 self.view,
-                "No Data Source",
-                "No data source is currently connected. We need a Serial connection to clear the PLM.",
-                QMessageBox.StandardButton.Ok,
+                "Unsupported Source",
+                "Clear PLM requires an active serial/radio connection.",
             )
             return
-        if hasattr(self.current_data_source, "send_command"):
-            self.current_data_source.send_command("clear_plm")
+
+        # ccc ONCE, then the commands, each with a delay
+        self._run_command_sequence(
+            ["ccc", "cplm", "r"],
+            delay_ms=300,
+            on_done=self._finish_clear_plm,
+        )
+
+
+    def _finish_clear_plm(self, ok, failed_cmd=None):
+        if ok:
             QMessageBox.information(
-                self.view,
-                "Clear PLM",
-                "Please reboot the board",
-                QMessageBox.StandardButton.Ok,
+                self.view, "PLM Cleared", "PLM cleared and restarted."
             )
         else:
-            QMessageBox.information(
+            QMessageBox.warning(
                 self.view,
-                "Not Supported",
-                "Clear PLM only works with serial connections",
-                QMessageBox.StandardButton.Ok,
+                "Command Mode Error",
+                f"Failed to send '{failed_cmd}'.",
             )
+        if getattr(self, "_plm_was_streaming", False) and self.connected \
+                and not self.streaming:
+            self.toggle_streaming()
+
 
     def get_current_data_source_type(self):
         sidebar = self.view.get_sidebar()
