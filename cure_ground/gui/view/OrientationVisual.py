@@ -79,9 +79,12 @@ class OrientationView(QWidget):
         data = getattr(self.status_model, "status_data", {})
 
         # Read attitude directly from radio
-        self.current_pitch = float(data.get("PITCH", 0))
-        self.current_yaw = float(data.get("YAW", 0))
-        self.current_roll = float(data.get("ROLL", 0))
+        try:
+            self.current_pitch = float(data.get("PITCH", 0))
+            self.current_yaw = float(data.get("YAW", 0))
+            self.current_roll = float(data.get("ROLL", 0))
+        except Exception:
+            print("Error reading attitude from radio")
         self.target_pitch = self.current_pitch
         self.target_yaw = self.current_yaw
         self.target_roll = self.current_roll
