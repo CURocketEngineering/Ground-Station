@@ -295,25 +295,42 @@ class DashboardController:
     #commands is a list of commands to send
     #delay_ms is the delay between each command
     #on_done is a function to call when the command sequence is done
-    def _run_command_sequence(self, commands:list, delay_ms=300, on_done = None):
-        # Pause streaming so update_status doesn't eat the command responses
+    def _run_command_sequence(self, commands: list, delay_ms=300, on_done=None):
+        # Remember whether streaming was active
         self._plm_was_streaming = self.streaming
+
+        # Pause streaming so update_status doesn't consume command responses
         if self.streaming:
             self.toggle_streaming()
-        def run_commnds(self, commands:list, delay_ms=300, on_done = None):
+
+        def run_commands(commands: list):
             if not commands:
-                on_done(True, None)
+                if self._plm_was_streaming and not self.streaming:
+                    self.toggle_streaming()
+
+                if on_done:
+                    on_done(True, None)
                 return
+
             cmd, rest = commands[0], commands[1:]
+
             if not self._send_raw_command(cmd):
-                on_done(False, cmd)
+                if self._plm_was_streaming and not self.streaming:
+                    self.toggle_streaming()
+
+                if on_done:
+                    on_done(False, cmd)
                 return
+
             print(f"> {cmd}")
+
             QTimer.singleShot(
                 delay_ms,
-                lambda: run_commnds(rest, delay_ms, on_done),
+                lambda: run_commands(rest),
             )
-            
+
+        run_commands(commands)
+
     def clear_plm(self):
         if QMessageBox.question(
             self.view,
