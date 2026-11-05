@@ -295,9 +295,10 @@ class DashboardController:
         self.view.get_packet_loss_indicator().set_packet_loss(retention_ratio)
 
     # --------------------- HELPERS --------------------- 
-    #commands is a list of commands to send
+    #commands is a list of commands to send and the list must start with the command 'ccc'
     #delay_ms is the delay between each command
     #on_done is a function to call when the command sequence is done
+
     def _run_command_sequence(self, commands: list, delay_ms=300, on_done=None):
         # Remember whether streaming was active
         self._plm_was_streaming = self.streaming
