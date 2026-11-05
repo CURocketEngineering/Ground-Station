@@ -326,7 +326,6 @@ class DashboardController:
                     on_done(False, cmd)
                 return
 
-            print(f"> {cmd}")
 
             QTimer.singleShot(
                 delay_ms,
